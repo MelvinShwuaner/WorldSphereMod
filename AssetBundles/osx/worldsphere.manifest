@@ -1,0 +1,26 @@
+ManifestFileVersion: 0
+CRC: 397376892
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: 7faab20ce859183b37811034a16f679d
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 6ee55d1372e9665c4ae73fbe3eacdfc7
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: 7faab20ce859183b37811034a16f679d
+HashAppended: 0
+ClassTypes:
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 43
+  Script: {instanceID: 0}
+- Class: 48
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/WorldSphereMod/CompoundSphere.shader
+- Assets/WorldSphereMod/CompoundSphereMesh.asset
+- Assets/WorldSphereMod/CompoundSphereMaterial.mat
+Dependencies: []

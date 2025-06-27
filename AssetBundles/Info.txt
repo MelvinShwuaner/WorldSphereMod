@@ -1,0 +1,2 @@
+compound spheres requires a special shader built for rendering thousands of meshes at once, these asset bundles store the shader
+the bundles also store the various meshes, like cubes, circles.
