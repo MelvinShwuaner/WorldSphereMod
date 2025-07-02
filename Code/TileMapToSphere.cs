@@ -1,61 +1,59 @@
 ﻿using CompoundSpheres;
 using HarmonyLib;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
+using WorldSphereMod.NewCamera;
 using static WorldSphereMod.TileMapToSphere.TileMapToSphere;
 namespace WorldSphereMod.TileMapToSphere
 {
-    [HarmonyPatch(typeof(ZoneCamera), nameof(ZoneCamera.getZoneWithinCamera))]
+    [HarmonyPatch(typeof(ZoneCamera), nameof(ZoneCamera.update))]
     class getzone3D
     {
         static ZoneCamera ZoneCamera => World.world.zone_camera;
-        static bool Prefix(int pX, int pY, float pBonusY, ref TileZone __result)
+        static bool Prefix()
         {
             if (Core.IsWorld3D)
             {
-                __result = getZoneWithinCamera(pX, pY, pBonusY);
+                UpdateZones();
                 return false;
             }
             return true;
         }
-        static TileZone Default(float pX, float pY)
+        static void UpdateZones()
         {
-            int X = pX == 0 ? 0 : ZoneCamera._zone_manager.zones_total_x - 1;
-            int Y = pY == 0 ? 0 : ZoneCamera._zone_manager.zones_total_y - 1;
-            return ZoneCamera._zone_manager.getZone(X, Y);
-        }
-        static TileZone getZoneWithinCamera(float pX, float pY, float pBonusY = 0f)
-        {
-            bool RayExists = World.world.camera.ViewPortToRay(new Vector3(pX, pY), out Ray Ray);
-            if (!RayExists)
+            ZoneCamera.clear();
+            int CameraX = (int)CameraManager.Position.x / 8;
+            Core.GetCamerRange(out int Min, out int Max);
+            Min /= 8;
+            Max /= 8;
+            for (int i = Min; i < Max; i++)
             {
-                return Default(pX, pY + pBonusY);
+                int I = (int)Tools.MathStuff.Clamp(CameraX, i, ZoneCamera._zone_manager.zones_total_x);
+                for(int j = 0; j < ZoneCamera._zone_manager.zones_total_y; j++)
+                {
+                    TileZone tZone = ZoneCamera._zone_manager.getZone(I, j);
+                    if(tZone == null)
+                    {
+                        continue;
+                    }
+                    ZoneCamera.zones.Add(tZone);
+                    tZone.visible = true;
+                    if (i == (Min+Max)/2 && j == ZoneCamera._zone_manager.zones_total_y / 2)
+                    {
+                        tZone.visible_main_centered = true;
+                    }
+                }
             }
-            bool Intersected = Tools.IntersectMesh(Ray, out Vector2Int Pos);
-            if (!Intersected)
-            {
-                return Default(pX, pY + pBonusY);
-            }
-            WorldTile tile = World.world.GetTile(Pos.x, Pos.y);
-            if (tile == null)
-            {
-                return Default(pX, pY + pBonusY);
-            }
-            return tile.zone;
         }
     }
     [HarmonyPatch(typeof(WorldTilemap), nameof(WorldTilemap.generate))]
     class Generate3D {
-        static bool Prefix(int pCount)
+        static void Prefix(int pCount)
         {
-            if (Core.GeneratingSphere)
-            {
-                Regenerate(pCount);
-                return false;
-            }
-            return true;
+            Regenerate(pCount);
         }
         static void Regenerate(int pCount)
         {
@@ -162,9 +160,9 @@ namespace WorldSphereMod.TileMapToSphere
         }
         static void Dispose()
         {
-            ColorQueue.Dispose();
-            TextureQueue.Dispose();
-            ScaleQueue.Dispose();
+            ColorQueue?.Dispose();
+            TextureQueue?.Dispose();
+            ScaleQueue?.Dispose();
         }
         public static bool Prefix(bool pForceAll)
         {
@@ -332,7 +330,7 @@ namespace WorldSphereMod.TileMapToSphere
         static FieldInfo Pixels => AccessTools.Field(typeof(Core.Sphere), nameof(Core.Sphere.CachedColors));
         static CodeMatch FindPixels => new CodeMatch((CodeInstruction instruction) => instruction.opcode == OpCodes.Ldfld && instruction.operand is FieldInfo field && field.Name == "pixels");
         static CodeMatch FindStelem => new CodeMatch(OpCodes.Stelem);
-        //same as the other one, but only for the world layer because it does not manage itself, Mapbox manages it
+        //same as the other one, but only for the world layer because it does not manage itself, Mapbox manages it (what a fucking wimp)
         [HarmonyPatch(typeof(MapBox), nameof(MapBox.updateDirtyTile))]
         [HarmonyTranspiler]
         public static IEnumerable<CodeInstruction> WorldTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)

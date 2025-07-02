@@ -3,12 +3,13 @@ using UnityEngine;
 using static WorldSphereMod.NewCamera.CameraManager;
 namespace WorldSphereMod.NewCamera
 {
+    //yes this feels like cheating
     [HarmonyPatch(typeof(Camera), "get_orthographicSize")]
     public class GetSize
     {
-        public static bool Prefix(Camera __instance, ref float __result)
+        public static bool Prefix(ref float __result)
         {
-            if (Core.IsWorld3D == true)
+            if (Core.IsWorld3D)
             {
                 __result = Height;
                 return false;
@@ -21,7 +22,7 @@ namespace WorldSphereMod.NewCamera
     {
         public static bool Prefix(float value)
         {
-            if (Core.IsWorld3D == true)
+            if (Core.IsWorld3D)
             {
                 Height = value;
                 return false;
@@ -30,6 +31,7 @@ namespace WorldSphereMod.NewCamera
         }
     }
     [HarmonyPatch(typeof(MoveCamera), "update")]
+    //this manages the camera
     public static class CameraManager
     {
         public static Vector2 Position => cam.transform.position;
@@ -47,6 +49,7 @@ namespace WorldSphereMod.NewCamera
             Camera.enabled = false;
             cam.mainCamera = OriginalCamera;
         }
+        //i want to rename this function to prepare but for some reason that breaks something. this is so fucking random i have no fucking idea how thats even possible
         public static void Begin()
         {
             Camera = new GameObject("WorldSphere Camera").AddComponent<Camera>();
@@ -57,8 +60,6 @@ namespace WorldSphereMod.NewCamera
         public static MoveCamera cam;
         public static Camera Camera;
         public static Camera OriginalCamera;
-        public static float X;
-        public static float Y;
         public static float Height;
         static void Postfix()
         {
@@ -66,21 +67,14 @@ namespace WorldSphereMod.NewCamera
             {
                 return;
             }
-            Bench.bench("Draw Sphere", "game_total");
-            Camera.transform.position = Core.Sphere.TilePos(Position.x, Position.y, Height);
+            Camera.transform.position = Core.Sphere.SpherePos(Position.x, Position.y, Height);
+            Bench.bench("Draw Sphere", "game_total"); //im not even sure if the lag is actually tracked
             Core.Sphere.DrawTiles((int)Position.x);
             Bench.benchEnd("Draw Sphere", "game_total");
         }
-        public static float Clamp(float rot, float Max)
-        {
-            if (rot < 0)
-            {
-                return Max - rot;
-            }
-            return rot % Max;
-        }
     }
     [HarmonyPatch(typeof(MoveCamera), nameof(MoveCamera.move))]
+    //would use a transpiler, but the c# compiler is a fucking bitch
     public class MovementEnhancement
     {
         public static void Move(HotkeyAsset pAsset)
@@ -139,9 +133,10 @@ namespace WorldSphereMod.NewCamera
         static void UpdateRotation(Vector2 Change)
         {
             Rotation.x = Mathf.Clamp(Rotation.x - Change.y, -90, 90);
-            Rotation.y = Clamp(Rotation.y + Change.x, 360);
+            Rotation.y = Tools.MathStuff.Clamp(Rotation.y, Change.x, 360);
             transform.rotation = Quaternion.Euler(Rotation);
         }
+        //i dont know how this fucking works and im too scared to touch it
         static void UpdatePanning(MoveCamera Cam)
         {
             MoveCamera.camera_drag_run = false;
@@ -208,12 +203,13 @@ namespace WorldSphereMod.NewCamera
     [HarmonyPatch(typeof(PixelDetector), nameof(PixelDetector.IntersectsSprite))]
     public class GetSphereTileUnderMouse
     {
-
+        //who knew that finding the position your mouse touches on a fucking 3d tube is simpler the finding it on a fucking 2d square
         static bool Prefix(Ray ray, ref Vector2Int pVector, ref bool __result)
         {
             if (Core.IsWorld3D)
             {
-                __result = Tools.IntersectMesh(ray, out pVector);
+                __result = Tools.IntersectMesh(ray, out Vector2 Vector);
+                pVector = Vector.AsInt();
                 return false;
             }
             return true;

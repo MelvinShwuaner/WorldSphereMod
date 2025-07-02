@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Events;
 
-namespace WorldSphereMod
+namespace WorldSphereMod.UI
 {
     public static class WorldSphereTab
     {
@@ -22,7 +22,7 @@ namespace WorldSphereMod
             Text.AddComponent<Text>();
         }
         
-        public static void Init()
+        public static void Begin()
         {
             CreateTabTools();
             CreateTab();
@@ -49,6 +49,7 @@ namespace WorldSphereMod
         {
             CreateToggleButton("Is3D", "ModResources/icon", "Is 3D", "This is ONLY applied once you reload the world", Toggle3D, Core.savedSettings.Is3D);
             CreateToggleButton("InvertedCamera", "ModResources/icon", "Inverted Camera", "if true, the horizontal and vertical movement of the camera will be swapped, if 3D", ToggleCamera, Core.savedSettings.InvertedCameraMovement);
+            CreateToggleButton("InvertedWorld", "ModResources/icon", "Inverted World", "fuck my life", ToggleWorld, Core.savedSettings.InvertedWorld);
         }
         static void Toggle3D()
         {
@@ -58,6 +59,11 @@ namespace WorldSphereMod
         static void ToggleCamera()
         {
             Core.savedSettings.InvertedCameraMovement = !Core.savedSettings.InvertedCameraMovement;
+            Core.SaveSettings();
+        }
+        static void ToggleWorld()
+        {
+            Core.savedSettings.InvertedWorld = !Core.savedSettings.InvertedWorld;
             Core.SaveSettings();
         }
         static void CreateButton(string ID, string IconPath, string name, string Description, UnityAction Action)

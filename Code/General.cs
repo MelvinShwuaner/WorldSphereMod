@@ -145,84 +145,84 @@ namespace WorldSphereMod.General
         [HarmonyPrefix]
         static bool distfloat(ref float __result, float x1, float y1, float x2, float y2)
         {
-            __result = Tools.Dist(x1, x2, y1, y2);
+            __result = Tools.MathStuff.Dist(x1, x2, y1, y2);
             return false;
         }
         [HarmonyPatch(typeof(Toolbox), nameof(Toolbox.Dist), new Type[] { typeof(int), typeof(int), typeof(int), typeof(int) })]
         [HarmonyPrefix]
         static bool distint(ref float __result, int x1, int y1, int x2, int y2)
         {
-            __result = Tools.Dist(x1, x2, y1, y2);
+            __result = Tools.MathStuff.Dist(x1, x2, y1, y2);
             return false;
         }
         [HarmonyPatch(typeof(Toolbox), nameof(Toolbox.SquaredDist), new Type[] { typeof(float), typeof(float), typeof(float), typeof(float) })]
         [HarmonyPrefix]
         static bool sqrdistfloat(ref float __result, float x1, float y1, float x2, float y2)
         {
-            __result = Tools.SquaredDist(x1, x2, y1, y2);
+            __result = Tools.MathStuff.SquaredDist(x1, x2, y1, y2);
             return false;
         }
         [HarmonyPatch(typeof(Toolbox), nameof(Toolbox.SquaredDist), new Type[] { typeof(int), typeof(int), typeof(int), typeof(int) })]
         [HarmonyPrefix]
         static bool sqrdistint(ref int __result, int x1, int y1, int x2, int y2)
         {
-            __result = (int)Tools.SquaredDist(x1, x2, y1, y2);
+            __result = (int)Tools.MathStuff.SquaredDist(x1, x2, y1, y2);
             return false;
         }
         [HarmonyPatch(typeof(Toolbox), nameof(Toolbox.DistVec3))]
         [HarmonyPrefix]
         static bool distvec3(ref float __result, Vector3 pT1, Vector3 pT2)
         {
-            __result = Tools.Dist(pT1.x, pT2.x, pT1.y, pT2.y);
+            __result = Tools.MathStuff.Dist(pT1.x, pT2.x, pT1.y, pT2.y);
             return false;
         }
         [HarmonyPatch(typeof(Toolbox), nameof(Toolbox.DistVec2))]
         [HarmonyPrefix]
         static bool distvec2(ref float __result, Vector2Int pT1, Vector2Int pT2)
         {
-            __result = Tools.Dist(pT1.x, pT2.x, pT1.y, pT2.y);
+            __result = Tools.MathStuff.Dist(pT1.x, pT2.x, pT1.y, pT2.y);
             return false;
         }
         [HarmonyPatch(typeof(Toolbox), nameof(Toolbox.DistVec2Float))]
         [HarmonyPrefix]
         static bool distvec2float(ref float __result, Vector2 pT1, Vector2 pT2)
         {
-            __result = Tools.Dist(pT1.x, pT2.x, pT1.y, pT2.y);
+            __result = Tools.MathStuff.Dist(pT1.x, pT2.x, pT1.y, pT2.y);
             return false;
         }
         [HarmonyPatch(typeof(Toolbox), nameof(Toolbox.SquaredDistVec3))]
         [HarmonyPrefix]
         static bool sqrdistvec3(ref float __result, Vector3 pT1, Vector3 pT2)
         {
-            __result = Tools.SquaredDist(pT1.x, pT2.x, pT1.y, pT2.y);
+            __result = Tools.MathStuff.SquaredDist(pT1.x, pT2.x, pT1.y, pT2.y);
             return false;
         }
         [HarmonyPatch(typeof(Toolbox), nameof(Toolbox.SquaredDistVec2))]
         [HarmonyPrefix]
         static bool sqrdistvec2(ref int __result, Vector2Int pT1, Vector2Int pT2)
         {
-            __result = (int)Tools.SquaredDist(pT1.x, pT2.x, pT1.y, pT2.y);
+            __result = (int)Tools.MathStuff.SquaredDist(pT1.x, pT2.x, pT1.y, pT2.y);
             return false;
         }
         [HarmonyPatch(typeof(Toolbox), nameof(Toolbox.SquaredDistVec2Float))]
         [HarmonyPrefix]
         static bool sqrdistvec2float(ref float __result, Vector2 pT1, Vector2 pT2)
         {
-            __result = Tools.SquaredDist(pT1.x, pT2.x, pT1.y, pT2.y);
+            __result = Tools.MathStuff.SquaredDist(pT1.x, pT2.x, pT1.y, pT2.y);
             return false;
         }
         [HarmonyPatch(typeof(Toolbox), nameof(Toolbox.DistTile))]
         [HarmonyPrefix]
         static bool disttile(ref float __result, WorldTile pT1, WorldTile pT2)
         {
-            __result = Tools.Dist(pT1.x, pT2.x, pT1.y, pT2.y);
+            __result = Tools.MathStuff.Dist(pT1.x, pT2.x, pT1.y, pT2.y);
             return false;
         }
         [HarmonyPatch(typeof(Toolbox), nameof(Toolbox.SquaredDistTile))]
         [HarmonyPrefix]
         static bool sqrdisttile(ref int __result, WorldTile pT1, WorldTile pT2)
         {
-            __result = (int)Tools.SquaredDist(pT1.x, pT2.x, pT1.y, pT2.y);
+            __result = (int)Tools.MathStuff.SquaredDist(pT1.x, pT2.x, pT1.y, pT2.y);
             return false;
         }
     }
@@ -233,39 +233,43 @@ namespace WorldSphereMod.General
             CodeMatcher Matcher = new CodeMatcher(instructions);
             Matcher.MatchForward(false, new CodeMatch(OpCodes.Call, AccessTools.Method(typeof(Vector2), nameof(Vector2.Lerp))));
             Matcher.RemoveInstruction();
-            Matcher.Insert(new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Tools), nameof(Tools.Lerp3D))));
+            Matcher.Insert(new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Tools.MathStuff), nameof(Tools.MathStuff.Lerp3D))));
             return Matcher.Instructions();
         }
     }
-    public class WorldSphereTranspiler
+    [HarmonyPatch(typeof(PlayerControl), nameof(PlayerControl.getMousePos))]
+    public class MousePos3D
     {
-        static MethodInfo GetLocalPosition => AccessTools.Method(typeof(Transform), "get_localPosition");
-        static MethodInfo SetLocalPosition => AccessTools.Method(typeof(Transform), "set_localPosition");
-        static MethodInfo GetPosition => AccessTools.Method(typeof(Transform), "get_position");
-        static MethodInfo SetPosition => AccessTools.Method(typeof(Transform), "set_position");
-        static MethodInfo To2D => AccessTools.Method(typeof(Tools), nameof(Tools.To2D), new Type[] { typeof(Vector3) });
-        static MethodInfo To3D => AccessTools.Method(typeof(Tools), nameof(Tools.To3DTileHeight));
-        static Func<CodeInstruction, bool> IsGet => (CodeInstruction instruction) => instruction.opcode == OpCodes.Callvirt && instruction.operand is MethodInfo method && (method == GetPosition || method == GetLocalPosition);
-        static Func<CodeInstruction, bool> IsSet => (CodeInstruction instruction) => instruction.opcode == OpCodes.Callvirt && instruction.operand is MethodInfo method && (method == SetPosition || method == SetLocalPosition);
-        //this transpiler converts a transforms position to 2d space whenever read, and to 3D space when written
-        //this is the most important transpiler in the mod
-        public static IEnumerable<CodeInstruction> SphereWorldTranspiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        static void Postfix(ref Vector2 __result)
         {
-            CodeMatcher Matcher = new CodeMatcher(instructions, generator);
-            while (Matcher.FindNext(new CodeMatch((CodeInstruction instruction) => IsGet(instruction) || IsSet(instruction))))
+            if (Core.IsWorld3D)
             {
-                if (IsGet(Matcher.Instruction))
+                Vector2 mousepos = Input.mousePosition;
+                if(Camera.main.ScreenPointToRay(mousepos, out Ray ray))
                 {
-                    Matcher.Advance(1);
-                    Matcher.Insert(new CodeInstruction(OpCodes.Call, To2D));
-                }
-                else
-                {
-                    Matcher.Insert(new CodeInstruction(OpCodes.Call, To3D));
-                    Matcher.Advance(1);
+                    if (Tools.IntersectMesh(ray, out Vector2 pos))
+                    {
+                        __result = pos;
+                    }
                 }
             }
-            return Matcher.Instructions();
+        }
+    }
+    [HarmonyPatch(typeof(Drop), nameof(Drop.updatePosition))]
+    public class Drop3D {
+        static bool Prefix(Drop __instance)
+        {
+            if (Core.IsWorld3D)
+            {
+                UpdatePosition3D(__instance);
+                return false;
+            }
+            return true;
+        }
+        static void UpdatePosition3D(Drop Drop)
+        {
+            Drop.transform.position = Tools.To3D(Drop.current_position.x, Drop.current_position.y, Drop._currentHeightZ);
+            Drop.transform.rotation = Tools.RotateToCameraAtTile(Drop.transform.position);
         }
     }
 }

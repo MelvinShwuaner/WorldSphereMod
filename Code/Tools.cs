@@ -1,17 +1,18 @@
 ﻿using CompoundSpheres;
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using UnityEngine;
 using HarmonyLib;
-using static UnityEngine.GraphicsBuffer;
 using WorldSphereMod.NewCamera;
-
+using System.Reflection;
+using static WorldSphereMod.Tools.MathStuff;
 namespace WorldSphereMod
 {
     public static class Tools
     {
+        public static void Transpile(this Harmony harmony, MethodInfo Method, HarmonyMethod Transpiler)
+        {
+            harmony.Patch(Method, null, null, Transpiler);
+        }
         public static bool FindNext(this CodeMatcher Matcher, params CodeMatch[] matches)
         {
             Matcher.Advance(1);
@@ -38,19 +39,21 @@ namespace WorldSphereMod
         {
             PrevInstruction.MoveLabelsTo(NewInstruction);
         }
-        public static bool ViewPortToRay(this Camera Camera, Vector2 Pos, out Ray Ray)
+        public static bool ScreenPointToRay(this Camera Camera, Vector2 Pos, out Ray Ray)
+        {
+            Vector2 viewportPos = Camera.ScreenToViewportPoint(Pos);
+            return ViewPortToRay(Camera, viewportPos, out Ray);
+        }
+        public static bool ViewPortToRay(this Camera Camera, Vector2 viewportPos, out Ray Ray)
         {
             Ray = default;
-            Pos.x *= Screen.width;
-            Pos.y *= Screen.height;
-            Vector2 viewportPos = Camera.ScreenToViewportPoint(Pos);
-            if (viewportPos.x <= 0f || viewportPos.x >= 1f || viewportPos.y <= 0f || viewportPos.y >= 1f)
+            if (viewportPos.x < 0f || viewportPos.x > 1f || viewportPos.y < 0f || viewportPos.y > 1f)
             {
                 return false;
             }
             try
             {
-                Ray = Camera.main.ViewportPointToRay(viewportPos);
+                Ray = Camera.ViewportPointToRay(viewportPos);
                 return true;
             }
             catch (Exception)
@@ -62,12 +65,12 @@ namespace WorldSphereMod
         {
             return new Vector2Int((int)Vector.x, (int)Vector.y);
         }
-        public static bool IntersectMesh(Ray ray, out Vector2Int pVector)
+        public static bool IntersectMesh(Ray ray, out Vector2 pVector)
         {
             pVector = Vector2Int.zero;
-            if (Physics.Raycast(ray, out var hitinfo))
+            if (Physics.Raycast(ray, out var hitinfo, Mathf.Infinity))
             {
-                pVector = To2D(hitinfo.point.x, hitinfo.point.y, hitinfo.point.z).AsInt();
+                pVector = To2D(hitinfo.point.x, hitinfo.point.y, hitinfo.point.z);
                 return true;
             }
             return false;
@@ -80,22 +83,10 @@ namespace WorldSphereMod
         {
             return Core.Sphere.BaseLayers.Contains(layer);
         }
-        public static float Angle(float X)
-        {
-            return Mathf.Tan(X / Core.Sphere.Radius);
-        }
-        public static float InverseAngle(float X)
-        {
-            return Mathf.Atan(X) * Core.Sphere.Radius;
-        }
-        const float HeightMult = 1.5f;
+        const float HeightMult = CompoundSphereScripts.ZConst / 2f;
         public static float TileHeight(this WorldTile Tile)
         {
             return TrueHeight(Tile.DisplayedType().render_z) * HeightMult;
-        }
-        public static Vector3 To3D(this WorldTile Tile)
-        {
-            return To3D(Tile.x, Tile.y, Tile.TileHeight());
         }
         public static bool EqualsColor(this Color32 mycolor, Color32 color)
         {
@@ -103,31 +94,11 @@ namespace WorldSphereMod
         }
         public static Vector2 Direction3D(Vector2 v1, Vector2 v2)
         {
-            return Direction3D(v1.x, v2.x, v1.y, v2.y);
-        }
-        public static Vector2 Direction3D(float x1, float x2, float y1, float y2)
-        {
-            float x = InverseAngle(Angle(x1) - Angle(x2));
-            float y = y1 - y2;
-            return new Vector2(x, y);
-        }
-        public static float SquaredDist3D(float x1, float x2, float y1, float y2)
-        {
-            float x = InverseAngle(Angle(x1) - Angle(x2));
-            float y = y1 - y2;
-            return (x * x) + (y * y);
-        }
-        public static Vector2 Lerp3D(Vector2 a, Vector2 b, float t)
-        {
-            a.x = Angle(a.x);
-            b.x = Angle(b.x);
-            Vector2 result = Vector2.Lerp(a, b, t);
-            result.x = InverseAngle(result.x);
-            return result;
+            return MathStuff.Direction3D(v1.x, v2.x, v1.y, v2.y);
         }
         public static Vector3 To3D(float x, float y, float z)
         {
-            return Core.Sphere.TilePos(x, y, z);
+            return Core.Sphere.SpherePos(x, y, z);
         }
         public static Vector3 To3D(this Vector2 v, float Height = 0)
         {
@@ -137,15 +108,35 @@ namespace WorldSphereMod
         {
             return To3D(v.x, v.y, v.z);
         }
-        public static Vector3 To3DTileHeight(this Vector3 v)
+        //not perfect, but good enough
+        public static float GetTileHeightSmooth(this Vector2 Pos)
         {
-            Vector2Int pos = ((Vector2)v).AsInt();
+            Vector2Int pos = Pos.AsInt();
             WorldTile Tile = World.world.GetTile(pos.x, pos.y);
-            return To3D(v, Tile?.TileHeight() ?? -Core.Sphere.Radius);
+            if (Tile == null)
+            {
+                return -Core.Sphere.Radius;
+            }
+            Vector2 SubPos = Pos - pos.AsFloat();
+            Vector2Int NextPos = new Vector2Int(Round(SubPos.x), Round(SubPos.y));
+            WorldTile ToTile = World.world.GetTile(pos.x + NextPos.x, pos.y + NextPos.y);
+            if (ToTile == null)
+            {
+                return Tile.TileHeight();
+            }
+            return Mathf.Lerp(Tile.TileHeight(), ToTile.TileHeight(), 1f-(Dist(SubPos.x, SubPos.y, NextPos.x, NextPos.y)*2));
+        }
+        public static Vector3 To3DTileHeight(this Vector2 v, float ExtraHeight = 0)
+        {
+            return To3D(v, GetTileHeightSmooth(v)+ExtraHeight);
+        }
+        public static Vector2 AsFloat(this Vector2Int Pos)
+        {
+            return new Vector2(Pos.x, Pos.y);
         }
         public static bool Is3D(this Vector3 v)
         {
-            return v.z > 0;
+            return v.z >= CompoundSphereScripts.ZDisplacement;
         }
         public static Vector3 To2D(this Vector3 v)
         {
@@ -153,7 +144,15 @@ namespace WorldSphereMod
         }
         public static Vector2 To2D(float x, float y, float z)
         {
-            return Core.Sphere.CylindricalToCarteisanFast(x, y, z);
+            return Core.Sphere.TilePos(x, y, z);
+        }
+        public static Vector3 To2DWithHeight(this Vector3 v)
+        {
+            return To2DWithHeight(v.x, v.y, v.z);
+        }
+        public static Vector3 To2DWithHeight(float x, float y, float z)
+        {
+            return Core.Sphere.TilePosWithHeight(x, y, z);
         }
         public static float TrueHeight(int height) => height switch
         {
@@ -265,18 +264,6 @@ namespace WorldSphereMod
             #endregion
             _ => 3f
         };
-        public static float Dist(float x1, float x2, float y1, float y2)
-        {
-            return Mathf.Sqrt(SquaredDist(x1, x2, y1, y2));
-        }
-        public static float SquaredDist(float x1, float x2, float y1, float y2)
-        {
-            if (!Core.IsWorld3D)
-            {
-                return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
-            }
-            return SquaredDist3D(x1, x2, y1, y2);
-        }
 
         public static void To3DBounds(ref int pX, ref int pY)
         {
@@ -298,6 +285,7 @@ namespace WorldSphereMod
             float b = color.b * amount + backColor.b * (1 - amount);
             return new Color(r, g, b);
         }
+        #region Rotations
         static readonly Quaternion ConstRot = Quaternion.Euler(0, 90, 180);
         static readonly Quaternion ConstUprightRot = Quaternion.Euler(-90, 90, 180);
         public static Quaternion GetRotation(float X, float Y)
@@ -310,10 +298,15 @@ namespace WorldSphereMod
             float angle = Angle(direction.y, direction.x);
             return Quaternion.AngleAxis(angle, Vector3.up);
         }
+        public static Quaternion RotateToCameraAtTile(Vector3 Pos)
+        {
+            return GetUprightRotation(Pos.x, Pos.y) * RotateToCamera(Pos.x, Pos.y, Pos.z);
+        }
         public static Quaternion GetUprightRotation(float X, float Y)
         {
             return Quaternion.AngleAxis(Angle(Y, X), Vector3.forward) * ConstUprightRot;
         }
+        #endregion
         public static Color Normalised(this Color Color)
         {
             float amount = Color.a;
@@ -325,10 +318,6 @@ namespace WorldSphereMod
         public static int Index(this SphereTile Tile)
         {
             return Tile.SphereToWorld().data.tile_id;
-        }
-        public static float Angle(float y, float x)
-        {
-            return Mathf.Atan2(y, x) * Mathf.Rad2Deg;
         }
         public static WorldTile SphereToWorld(this SphereTile Tile)
         {
@@ -346,6 +335,88 @@ namespace WorldSphereMod
                 Type = pTile.Type;
             }
             return Type;
+        }
+        public static Vector2Int Pos(this TileZone Zone)
+        {
+            return new Vector2Int(Zone.x, Zone.y);
+        }
+        //behold,the file i had to use ai for
+        public static class MathStuff
+        {
+           
+            //dist but with direction
+            public static Vector2 Direction3D(float x1, float x2, float y1, float y2)
+            {
+                float x = WrappedDist(x1, x2);
+                float y = y1 - y2;
+                return new Vector2(x, y);
+            }
+            public static float Dist(float x1, float x2, float y1, float y2)
+            {
+                return Mathf.Sqrt(SquaredDist(x1, x2, y1, y2));
+            }
+            public static Vector2 Lerp3D(Vector2 a, Vector2 b, float t)
+            {
+                t = Mathf.Clamp01(t);
+                Vector2 result = new Vector2(a.x + WrappedDist(b.x, a.x) * t, a.y + (b.y - a.y) * t);
+                return result;
+            }
+            public static float SquaredDist(float x1, float x2, float y1, float y2)
+            {
+                if (!Core.IsWorld3D)
+                {
+                    return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
+                }
+                return SquaredDist3D(x1, x2, y1, y2);
+            }
+            public static float WrappedDist(float a, float b)
+            {
+                return WrappedDist(a, b, Core.Sphere.Width);
+            }
+            public static float Angle(float y, float x)
+            {
+                return Mathf.Atan2(y, x) * Mathf.Rad2Deg;
+            }
+            public static float SquaredDist3D(float x1, float x2, float y1, float y2)
+            {
+                float x = WrappedDist(x1, x2);
+                float y = y1 - y2;
+                return (x * x) + (y * y);
+            }
+            //only between 0 and 1
+            public static int Round(float num)
+            {
+                if (num < 0.5f)
+                {
+                    return -1;
+                }
+                return 1;
+            }
+            public static float Clamp(float Pos, float Change, float Max)
+            {
+                Pos += Change;
+                if (Pos < 0)
+                {
+                    return Max + Pos;
+                }
+                return Pos % Max;
+            }
+            public static Vector2 PointOnCircle(float X, float Radius, float Height = 0)
+            {
+                float phi = X / Radius;
+                float x = (Radius + Height) * Mathf.Cos(phi);
+                float y = (Radius + Height) * Mathf.Sin(phi);
+                return new Vector2(x, y);
+            }
+            public static float WrappedDist(float a, float b, float L)
+            {
+                float delta = a - b;
+                if (delta > L / 2f)
+                    delta -= L;
+                else if (delta < -L / 2f)
+                    delta += L;
+                return delta;
+            }
         }
     }
 }

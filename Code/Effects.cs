@@ -1,52 +1,153 @@
 ﻿using HarmonyLib;
-using Steamworks;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Net.NetworkInformation;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Text;
 using UnityEngine;
-using WorldSphereMod.NewCamera;
-using static UnityEngine.Random;
 using static WorldSphereMod.Effects.EffectManager;
 namespace WorldSphereMod.Effects
 {
     public struct EffectData
     {
        public bool IsUpright;
-       public EffectData(bool isUpright)
+       public bool SeperateSprite;
+       public float ExtraHeight;
+        public bool OnGround;
+       public EffectData(bool isUpright, bool SeperateSprite = false, float ExtraHeight = 0, bool OnGround = true)
        {
             IsUpright = isUpright;
+            this.ExtraHeight = ExtraHeight;
+            this.SeperateSprite = SeperateSprite;
+            this.OnGround = OnGround;
        }
     }
     public static class EffectManager
     {
-        static void Add(this ConcurrentDictionary<string, EffectData> dict, string value, EffectData data)
+        public static void Destroy(UnityEngine.Object obj)
         {
-            dict.TryAdd(value, data);
+            if(obj == null)
+            {
+                return;
+            }
+            UnityEngine.Object.Destroy(obj);
         }
+        //this is prob going to create a hundred errors in the future
+        public static void SeperateSprite(BaseEffect Effect)
+        {
+            GameObject sprite = GetSprite(Effect.controller.prefab);
+            Destroy(Effect.sprite_renderer);
+            sprite.transform.position = Effect.transform.position;
+            sprite.gameObject.SetActive(true);
+            Effect.sprite_renderer = sprite.GetComponent<SpriteRenderer>();
+            if (Effect.sprite_animation != null)
+            {
+                Effect.sprite_animation.spriteRenderer = Effect.sprite_renderer;
+            }
+        }
+        public static GameObject GetSprite(Transform OriginalPrefab)
+        {
+            if(SpritePrefabs.TryGetValue(OriginalPrefab, out GameObject prefab)){
+                return UnityEngine.Object.Instantiate(prefab);
+            }
+            GameObject sprite = UnityEngine.Object.Instantiate(OriginalPrefab.gameObject);
+            Destroy(sprite.GetComponent<BaseEffect>());
+            Destroy(sprite.GetComponent<SpriteShadow>());
+            Destroy(sprite.GetComponent<SpriteAnimation>());
+            SpritePrefabs.Add(OriginalPrefab, sprite);
+            return UnityEngine.Object.Instantiate(sprite);
+        }
+        static void Add<TKey, TValue>(this ConcurrentDictionary<TKey, TValue> dict, TKey key, TValue value)
+        {
+            dict.TryAdd(key, value);
+        }
+        internal static ConcurrentDictionary<Transform, GameObject> SpritePrefabs = new ConcurrentDictionary<Transform, GameObject>();
         internal static ConcurrentDictionary<string, EffectData> EffectDatas = new ConcurrentDictionary<string, EffectData>()
         {
             {"fx_meteorite", new EffectData(false) },
             {"fx_fire_smoke", new EffectData(false) },
             {"fx_antimatter_effect", new EffectData(false) },
+            {"fx_boulder", new EffectData(true) },
+            {"fx_explosion_wave", new EffectData(false) },
+            {"fx_tile_effect", new EffectData(false) },
+            {"fx_cloud", new EffectData(false, true, 21, false) }
         };
-       public static readonly EffectData DefaultData = new EffectData(true);
-       public static void SetEffect3D(BaseEffect Effect, bool Upright)
-       {
+        public static void SetEffect3D(BaseEffect Effect, EffectData Data)
+        {
             if (!Effect.transform.position.Is3D())
             {
-                Effect.transform.position = Tools.To3D(Effect.transform.position, Effect.GetTile()?.TileHeight() ?? 0);
+                if (Data.SeperateSprite)
+                {
+                    UpdateSeperatedSprite(Effect);
+                }
+                else
+                {
+                    Effect.transform.position = ((Vector2)Effect.transform.position).To3D(Data.ExtraHeight + (Data.OnGround ? Tools.GetTileHeightSmooth(Effect.transform.position) : 0));
+                }
             }
-            if (Upright)
+            Transform transform = Data.SeperateSprite ? Effect.sprite_renderer.transform : Effect.transform;
+            if (Data.IsUpright)
             {
-                Effect.transform.rotation = Tools.GetUprightRotation(Effect.transform.position.x, Effect.transform.position.y) * Tools.RotateToCamera(Effect.transform.position.x, Effect.transform.position.y, Effect.transform.position.z);
+                RotateToPlayer(transform, transform.position);
             }
             else
             {
-                Effect.transform.rotation = Tools.GetRotation(Effect.transform.position.x, Effect.transform.position.y);
+               transform.rotation = Tools.GetRotation(transform.position.x, transform.position.y);
+            }
+        }
+        public static void RotateToPlayer(Transform transform, Vector3 Position)
+        {
+            transform.rotation = Tools.RotateToCameraAtTile(Position);
+        }
+        public static void UpdateSeperatedSprite(BaseEffect Effect, bool OnGround = true, float Height = 0)
+        {
+            Effect.sprite_renderer.transform.position = ((Vector2)Effect.transform.position).To3D(Height + (OnGround ? Tools.GetTileHeightSmooth(Effect.transform.position) : 0));
+            Effect.sprite_renderer.transform.localScale = Effect.transform.localScale;
+        }
+        public static void UpdateEffect(BaseEffect Effect)
+        {
+            EffectData Data = GetData(Effect);
+            Transform transform = Data.SeperateSprite ? Effect.sprite_renderer.transform : Effect.transform;
+            Vector3 Pos = transform.position;
+            if (!Pos.Is3D())
+            {
+                Pos = Pos.To3D();
+            }
+            if (Data.IsUpright)
+            {
+                RotateToPlayer(transform, Pos);
+            }
+            else
+            {
+                transform.rotation = Tools.GetRotation(Pos.x, Pos.y);
+            }
+            if (Data.SeperateSprite)
+            {
+                UpdateSeperatedSprite(Effect, Data.OnGround, Data.ExtraHeight);
+            }
+        }
+        public static void UpdateShadow(SpriteShadow Shadow)
+        {
+            Vector3 Pos = Shadow.sprRndCaster.transform.position;
+            if (Pos.Is3D())
+            {
+                Pos = Pos.To2DWithHeight();
+            }
+            Shadow.transShadow.position = Tools.To3DTileHeight(new Vector2(Pos.x + Shadow.offset.x, Pos.y), Pos.z+Shadow.offset.y);
+            Shadow.transShadow.rotation = Shadow.sprRndCaster.transform.rotation;
+            Color tColor = Shadow.shadowColor;
+            tColor.a = Shadow.sprRndCaster.color.a * 0.5f;
+            Shadow.sprRndShadow.color = tColor;
+            Shadow.sprRndShadow.sprite = Shadow.sprRndCaster.sprite;
+            Shadow.sprRndShadow.flipX = Shadow.sprRndCaster.flipX;
+        }
+        public static void DestroyEffect(BaseEffect Effect)
+        {
+            if(Effect.sprite_renderer != null)
+            {
+                Destroy(Effect.sprite_renderer.gameObject);
+            }
+            if(Effect != null)
+            {
+                Destroy(Effect.gameObject);
             }
         }
         public static BaseEffect spawnAt3D(string pID, Vector3 pPos, float pScale)
@@ -68,26 +169,52 @@ namespace WorldSphereMod.Effects
             effect.setAlpha(1f);
             effect.resetAnim();
         }
-        public static EffectData GetData(string ID)
+        public static EffectData GetData(BaseEffect Effect)
         {
-            if(EffectDatas.TryGetValue(ID, out var data))
+            if (EffectDatas.TryGetValue(Effect.controller.asset.id, out var data))
             {
                 return data;
             }
-            return DefaultData;
+            return new EffectData(true, ShouldSeperateSprite(Effect));
+        }
+        //we should seperate the sprite if this a custom effect with custom code, otherwise no need.
+        public static bool ShouldSeperateSprite(BaseEffect Effect)
+        {
+            return Effect.GetType().IsSubclassOf(typeof(BaseEffect)) && Effect.controller.prefab.HasComponent<SpriteRenderer>();
         }
     }
     class EffectPatches
     {
+        [HarmonyPatch(typeof(BaseEffectController), nameof(BaseEffectController.GetObject))]
+        [HarmonyPostfix]
+        public static void SeperateSprite(BaseEffect __result)
+        {
+            if (!Core.IsWorld3D || __result == null)
+            {
+                return;
+            }
+            EffectData data = GetData(__result);
+            if (data.SeperateSprite)
+            {
+                if (__result.sprite_renderer.gameObject == __result.gameObject)
+                {
+                    EffectManager.SeperateSprite(__result);
+                }
+                else
+                {
+                    __result.sprite_renderer.gameObject.SetActive(true);
+                }
+            }
+        }
+        //for the person whose reading this, did you know that the jews caused 911 and control america!
         public static void BasePatch(BaseEffect __instance)
         {
             if (!Core.IsWorld3D)
             {
                 return;
             }
-            string pID = __instance.controller.asset.id;
-            EffectData data = GetData(pID);
-            SetEffect3D(__instance, data.IsUpright);
+            EffectData data = GetData(__instance);
+            SetEffect3D(__instance, data);
         }
         [HarmonyPatch(typeof(Meteorite), nameof(Meteorite.spawnOn))]
         [HarmonyPostfix]
@@ -115,6 +242,92 @@ namespace WorldSphereMod.Effects
                 return false;
             }
             return true;
+        }
+        [HarmonyPatch(typeof(BaseEffect), nameof(BaseEffect.update))]
+        [HarmonyPostfix]
+        public static void UpdateEffect(BaseEffect __instance)
+        {
+            if (Core.IsWorld3D)
+            {
+                EffectManager.UpdateEffect(__instance);
+            }
+        }
+        [HarmonyPatch(typeof(Cloud), nameof(Cloud.update))]
+        [HarmonyPostfix]
+        public static void UpdateCloud(Cloud __instance)
+        {
+            if (Core.IsWorld3D)
+            {
+                EffectManager.UpdateEffect(__instance);
+            }
+        }
+        [HarmonyPatch(typeof(BaseEffect), nameof(BaseEffect.deactivate))]
+        [HarmonyPrefix]
+        public static void DeactivateSprite(BaseEffect __instance)
+        {
+            if (!Core.IsWorld3D)
+            {
+                return;
+            }
+            if(!GetData(__instance).SeperateSprite)
+            {
+                return;
+            }
+            __instance.sprite_renderer.gameObject.SetActive(false);
+        }
+        [HarmonyPatch(typeof(SpriteShadow), nameof(SpriteShadow.LateUpdate))]
+        [HarmonyPrefix]
+        public static bool Shadow3D(SpriteShadow __instance)
+        {
+            static void updateshadow(SpriteShadow shadow)
+            {
+                if (shadow.sprRndCaster == null)
+                {
+                    BaseEffect effect = shadow.GetComponent<BaseEffect>();
+                    shadow.sprRndCaster = effect.sprite_renderer;
+                }
+                UpdateShadow(shadow);
+            }
+            if (Core.IsWorld3D)
+            {
+                updateshadow(__instance);
+                return false;
+            }
+            return true;
+        }
+        [HarmonyPatch(typeof(BaseEffectController), nameof(BaseEffectController.clear))]
+        [HarmonyPrefix]
+        public static bool Clear3D(BaseEffectController __instance)
+        {
+            if (Core.IsWorld3D)
+            {
+                List<BaseEffect> tList = __instance._list;
+                for (int i = 0; i < tList.Count; i++)
+                {
+                    DestroyEffect(tList[i]);
+                }
+                tList.Clear();
+                __instance.activeIndex = 0;
+                return false;
+            }
+            return true;
+        }
+        [HarmonyPatch(typeof(SpriteAnimation), nameof(SpriteAnimation.update))]
+        [HarmonyPrefix]
+        public static void FixSpriteAnimation(SpriteAnimation __instance)
+        {
+            if (__instance.spriteRenderer == null)
+            {
+                __instance.spriteRenderer = __instance.GetComponent<BaseEffect>().sprite_renderer;
+            }
+        }
+        [HarmonyPatch(typeof(StatusParticle), nameof(StatusParticle.spawnParticle))]
+        [HarmonyPrefix]
+        public static bool FixParticle(StatusParticle __instance, Vector3 pVector, Color pColor, float pScale)
+        {
+            __instance.prepare(pVector, pScale);
+            __instance.sprite_renderer.color = pColor;
+            return false;
         }
     }
 }

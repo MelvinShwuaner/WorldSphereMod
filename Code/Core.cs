@@ -15,9 +15,9 @@ using WorldSphereMod.General;
 using System.Reflection;
 using WorldSphereMod.Effects;
 using System;
-using System.Collections.Concurrent;
-using System.Threading.Tasks;
 using WorldSphereMod.TileMapToSphere;
+using WorldSphereMod.UI;
+using WorldSphereMod.QuantumSprites;
 namespace WorldSphereMod
 {
     class Core : MonoBehaviour, IMod, IStagedLoad
@@ -29,12 +29,12 @@ namespace WorldSphereMod
         }
         public GameObject GetGameObject()
         {
-            return gameobject;
+            return Object;
         }
         public void OnLoad(ModDeclare pModDecl, GameObject pGameObject)
         {
             declare = pModDecl;
-            gameobject = pGameObject;
+            Object = pGameObject;
             if (!SystemInfo.supportsInstancing || !SystemInfo.supportsComputeShaders || !SystemInfo.supportsIndirectArgumentsBuffer)
             {
                 throw new IncompatibleHardwareException();
@@ -44,13 +44,13 @@ namespace WorldSphereMod
         {
             return "https://github.com/MelvinShwuaner?tab=repositories";
         }
-        GameObject gameobject;
+        public static GameObject Object;
         ModDeclare declare;
         #endregion
         public static SavedSettings savedSettings = new SavedSettings();
         public static string SettingsVersion = "1.0.0";
 
-        Harmony harmony;
+        public static Harmony Patcher;
         public static void SaveSettings()
         {
             string json = JsonConvert.SerializeObject(savedSettings, Formatting.Indented);
@@ -79,8 +79,9 @@ namespace WorldSphereMod
         public void Init()
         {
             LoadSettings();
+            DimensionConversions.Prepare();
             Patch();
-            WorldSphereTab.Init();
+            WorldSphereTab.Begin();
             CameraManager.Begin();
         }
         // load the textures after mods are loaded incase some mods add new world tiles
@@ -89,62 +90,84 @@ namespace WorldSphereMod
             Sphere.Prepare();
         }
         const string HarmonyID = "WorldSphereMod";
-        //this made makes the game 3D, of course im patching alot (rip compatibility)
+        void Patch(Type type)
+        {
+            Harmony.CreateAndPatchAll(type, HarmonyID);
+        }
+        //this mod makes the game 3D, of course im patching alot (rip compatibility)
         void Patch()
         {
-            Harmony.CreateAndPatchAll(typeof(LoopWithBrush), HarmonyID);
-            Harmony.CreateAndPatchAll(typeof(SphereControl), HarmonyID);
-            Harmony.CreateAndPatchAll(typeof(Dist3D), HarmonyID);
-            Harmony.CreateAndPatchAll(typeof(EffectPatches), HarmonyID);
-            Harmony.CreateAndPatchAll(typeof(AddLayers), HarmonyID);
-            harmony = new Harmony(HarmonyID);
-            harmony.PatchAll();
+            Patch(typeof(SphereControl));
+            Patch(typeof(Dist3D));
+            Patch(typeof(EffectPatches));
+            Patch(typeof(AddLayers));
+            Patch(typeof(QuantumSpritePatches));
+            Patcher = new Harmony(HarmonyID);
+            Patcher.PatchAll();
 
             MethodInfo WorldLoopPatch = Method(typeof(GetTile3D), nameof(GetTile3D.Prefix));
-            harmony.Patch(Method(typeof(GeneratorTool), nameof(GeneratorTool.getTile)), new HarmonyMethod(WorldLoopPatch));
-            harmony.Patch(Method(typeof(MapBox), nameof(MapBox.GetTile)), new HarmonyMethod(WorldLoopPatch));
+            Patcher.Patch(Method(typeof(GeneratorTool), nameof(GeneratorTool.getTile)), new HarmonyMethod(WorldLoopPatch));
+            Patcher.Patch(Method(typeof(MapBox), nameof(MapBox.GetTile)), new HarmonyMethod(WorldLoopPatch));
 
             MethodInfo Lerp3DPatch = Method(typeof(Lerp3D), nameof(Lerp3D.Transpiler));
-            harmony.Patch(Method(typeof(PlayerControl), nameof(PlayerControl.clickedStart)), null, null, new HarmonyMethod(Lerp3DPatch));
+            Patcher.Patch(Method(typeof(PlayerControl), nameof(PlayerControl.clickedStart)), null, null, new HarmonyMethod(Lerp3DPatch));
 
             MethodInfo EffectPatch = Method(typeof(EffectPatches), nameof(EffectPatches.BasePatch));
-            harmony.Patch(Method(typeof(BaseEffect), nameof(BaseEffect.prepare), new Type[] { }), null, new HarmonyMethod(EffectPatch));
-            harmony.Patch(Method(typeof(BaseEffect), nameof(BaseEffect.prepare), new Type[] {typeof(WorldTile), typeof(float) }), null, new HarmonyMethod(EffectPatch));
-            harmony.Patch(Method(typeof(BaseEffect), nameof(BaseEffect.prepare), new Type[] {typeof(Vector2), typeof(float) }), null, new HarmonyMethod(EffectPatch));
+            Patcher.Patch(Method(typeof(BaseEffect), nameof(BaseEffect.prepare), new Type[] { }), null, new HarmonyMethod(EffectPatch));
+            Patcher.Patch(Method(typeof(BaseEffect), nameof(BaseEffect.prepare), new Type[] {typeof(WorldTile), typeof(float) }), null, new HarmonyMethod(EffectPatch));
+            Patcher.Patch(Method(typeof(BaseEffect), nameof(BaseEffect.prepare), new Type[] {typeof(Vector2), typeof(float) }), null, new HarmonyMethod(EffectPatch));
             //may allah forgive me
             HarmonyMethod MapLayerTranspiler = new HarmonyMethod(Method(typeof(AddLayers), nameof(AddLayers.MapLayerTranspiler)));
-            harmony.Patch(Method(typeof(DebugLayer), nameof(DebugLayer.drawBuildings)), null, null, MapLayerTranspiler);
-            harmony.Patch(Method(typeof(BurnedTilesLayer), nameof(BurnedTilesLayer.UpdateDirty)), null, null, MapLayerTranspiler);
-            harmony.Patch(Method(typeof(ConwayLife), nameof(ConwayLife.UpdateVisual)), null, null, MapLayerTranspiler);
-            harmony.Patch(Method(typeof(DebugLayer), nameof(DebugLayer.clear)), null, null, MapLayerTranspiler);
-            harmony.Patch(Method(typeof(DebugLayer), nameof(DebugLayer.drawCitizenJobs)), null, null, MapLayerTranspiler);
-            harmony.Patch(Method(typeof(DebugLayer), nameof(DebugLayer.drawConstructionTiles)), null, null, MapLayerTranspiler);
-            harmony.Patch(Method(typeof(DebugLayer), nameof(DebugLayer.drawProfession)), null, null, MapLayerTranspiler);
-            harmony.Patch(Method(typeof(DebugLayer), nameof(DebugLayer.drawTargetedBy)), null, null, MapLayerTranspiler);
-            harmony.Patch(Method(typeof(DebugLayer), nameof(DebugLayer.drawUnitKingdoms)), null, null, MapLayerTranspiler);
-            harmony.Patch(Method(typeof(DebugLayer), nameof(DebugLayer.drawUnitsInside)), null, null, MapLayerTranspiler);
-            harmony.Patch(Method(typeof(DebugLayer), nameof(DebugLayer.drawUnitTiles)), null, null, MapLayerTranspiler);
-            harmony.Patch(Method(typeof(DebugLayer), nameof(DebugLayer.fill), new Type[] {typeof(List<WorldTile>), typeof(Color), typeof(bool)}), null, null, MapLayerTranspiler);
-            harmony.Patch(Method(typeof(DebugLayer), nameof(DebugLayer.fill), new Type[] { typeof(WorldTile[]), typeof(Color), typeof(bool) }), null, null, MapLayerTranspiler);
-            harmony.Patch(Method(typeof(DebugLayerCursor), nameof(DebugLayerCursor.fill), new Type[] { typeof(List<WorldTile>), typeof(Color), typeof(bool) }), null, null, MapLayerTranspiler);
-            harmony.Patch(Method(typeof(DebugLayerCursor), nameof(DebugLayerCursor.fill), new Type[] { typeof(WorldTile[]), typeof(Color), typeof(bool) }), null, null, MapLayerTranspiler);
-            harmony.Patch(Method(typeof(DebugLayerCursor), nameof(DebugLayerCursor.drawIsland)), null, null, MapLayerTranspiler);
-            harmony.Patch(Method(typeof(ExplosionsEffects), nameof(ExplosionsEffects.UpdateDirty)), null, null, MapLayerTranspiler);
-            harmony.Patch(Method(typeof(FireLayer), nameof(FireLayer.UpdateDirty)), null, null, MapLayerTranspiler);
-            harmony.Patch(Method(typeof(LavaLayer), nameof(LavaLayer.drawLavaPixel)), null, null, MapLayerTranspiler);
-            harmony.Patch(Method(typeof(LavaLayer), nameof(LavaLayer.updateLava)), null, null, MapLayerTranspiler);
-            harmony.Patch(Method(typeof(PathFindingVisualiser), nameof(PathFindingVisualiser.showPath)), null, null, MapLayerTranspiler);
-            harmony.Patch(Method(typeof(PixelFlashEffects), nameof(PixelFlashEffects.UpdateDirty)), null, null, MapLayerTranspiler);
-            harmony.Patch(Method(typeof(UnitLayer), nameof(UnitLayer.UpdateDirty)), null, null, MapLayerTranspiler);
-            harmony.Patch(Method(typeof(WorldLayerEdges), nameof(WorldLayerEdges.redraw)), null, null, MapLayerTranspiler);
-            harmony.Patch(Method(typeof(WorldLayerEdges), nameof(WorldLayerEdges.redrawTile)), null, null, MapLayerTranspiler);
-            harmony.Patch(Method(typeof(ZoneCalculator), nameof(ZoneCalculator.applyMetaColorsToZone)), null, null, MapLayerTranspiler);
-            harmony.Patch(Method(typeof(ZoneCalculator), nameof(ZoneCalculator.colorZone)), null, null, MapLayerTranspiler);
-            //this is where the fun begins
-            HarmonyMethod SphereWorldTranspiler = new HarmonyMethod(Method(typeof(WorldSphereTranspiler), nameof(WorldSphereTranspiler.SphereWorldTranspiler)));
-            harmony.Patch(Method(typeof(BoulderCharge), nameof(BoulderCharge.update)), null, null, SphereWorldTranspiler);
-            harmony.Patch(Method(typeof(Boulder), nameof(Boulder.updateCurrentPosition)), null, null, SphereWorldTranspiler);
-            harmony.Patch(Method(typeof(Boulder), nameof(Boulder.actionLanded)), null, null, SphereWorldTranspiler);
+            Patcher.Transpile(Method(typeof(DebugLayer), nameof(DebugLayer.drawBuildings)), MapLayerTranspiler);
+            Patcher.Transpile(Method(typeof(BurnedTilesLayer), nameof(BurnedTilesLayer.UpdateDirty)), MapLayerTranspiler);
+            Patcher.Transpile(Method(typeof(ConwayLife), nameof(ConwayLife.UpdateVisual)), MapLayerTranspiler);
+            Patcher.Transpile(Method(typeof(DebugLayer), nameof(DebugLayer.clear)), MapLayerTranspiler);
+            Patcher.Transpile(Method(typeof(DebugLayer), nameof(DebugLayer.drawCitizenJobs)), MapLayerTranspiler);
+            Patcher.Transpile(Method(typeof(DebugLayer), nameof(DebugLayer.drawConstructionTiles)), MapLayerTranspiler);
+            Patcher.Transpile(Method(typeof(DebugLayer), nameof(DebugLayer.drawProfession)), MapLayerTranspiler);
+            Patcher.Transpile(Method(typeof(DebugLayer), nameof(DebugLayer.drawTargetedBy)), MapLayerTranspiler);
+            Patcher.Transpile(Method(typeof(DebugLayer), nameof(DebugLayer.drawUnitKingdoms)), MapLayerTranspiler);
+            Patcher.Transpile(Method(typeof(DebugLayer), nameof(DebugLayer.drawUnitsInside)), MapLayerTranspiler);
+            Patcher.Transpile(Method(typeof(DebugLayer), nameof(DebugLayer.drawUnitTiles)), MapLayerTranspiler);
+            Patcher.Transpile(Method(typeof(DebugLayer), nameof(DebugLayer.fill), new Type[] {typeof(List<WorldTile>), typeof(Color), typeof(bool)}), MapLayerTranspiler);
+            Patcher.Transpile(Method(typeof(DebugLayer), nameof(DebugLayer.fill), new Type[] { typeof(WorldTile[]), typeof(Color), typeof(bool) }), MapLayerTranspiler);
+            Patcher.Transpile(Method(typeof(DebugLayerCursor), nameof(DebugLayerCursor.fill), new Type[] { typeof(List<WorldTile>), typeof(Color), typeof(bool) }), MapLayerTranspiler);
+            Patcher.Transpile(Method(typeof(DebugLayerCursor), nameof(DebugLayerCursor.fill), new Type[] { typeof(WorldTile[]), typeof(Color), typeof(bool) }), MapLayerTranspiler);
+            Patcher.Transpile(Method(typeof(DebugLayerCursor), nameof(DebugLayerCursor.drawIsland)), MapLayerTranspiler);
+            Patcher.Transpile(Method(typeof(ExplosionsEffects), nameof(ExplosionsEffects.UpdateDirty)), MapLayerTranspiler);
+            Patcher.Transpile(Method(typeof(FireLayer), nameof(FireLayer.UpdateDirty)), MapLayerTranspiler);
+            Patcher.Transpile(Method(typeof(LavaLayer), nameof(LavaLayer.drawLavaPixel)), MapLayerTranspiler);
+            Patcher.Transpile(Method(typeof(LavaLayer), nameof(LavaLayer.updateLava)), MapLayerTranspiler);
+            Patcher.Transpile(Method(typeof(PathFindingVisualiser), nameof(PathFindingVisualiser.showPath)), MapLayerTranspiler);
+            Patcher.Transpile(Method(typeof(PixelFlashEffects), nameof(PixelFlashEffects.UpdateDirty)), MapLayerTranspiler);
+            Patcher.Transpile(Method(typeof(UnitLayer), nameof(UnitLayer.UpdateDirty)), MapLayerTranspiler);
+            Patcher.Transpile(Method(typeof(WorldLayerEdges), nameof(WorldLayerEdges.redraw)), MapLayerTranspiler);
+            Patcher.Transpile(Method(typeof(WorldLayerEdges), nameof(WorldLayerEdges.redrawTile)), MapLayerTranspiler);
+            Patcher.Transpile(Method(typeof(ZoneCalculator), nameof(ZoneCalculator.applyMetaColorsToZone)), MapLayerTranspiler);
+            Patcher.Transpile(Method(typeof(ZoneCalculator), nameof(ZoneCalculator.colorZone)), MapLayerTranspiler);
+            //this is where the fun begins 
+            DimensionConversions.ConvertPositions(Method(typeof(Boulder), nameof(Boulder.updateCurrentPosition)), 1);
+            DimensionConversions.ConvertPositions(Method(typeof(Boulder), nameof(Boulder.actionLanded)));
+
+            DimensionConversions.ConvertBoth(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawUnits)));
+            DimensionConversions.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawShadowsBuildings)));
+            DimensionConversions.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawArrowQuantumSprite)));
+            DimensionConversions.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawUnitItems)));
+            DimensionConversions.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawFires)));
+            DimensionConversions.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawShadowsUnit)));
+            DimensionConversions.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawUnitAttackRange)));
+            DimensionConversions.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawUnitSize)));
+            DimensionConversions.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawUnitsAvatars)));
+            DimensionConversions.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawLightAreas)));
+
+            DimensionConversions.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.setPosOnly), new Type[] {typeof(Vector2)}));
+            DimensionConversions.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.setPosOnly), new Type[] { typeof(Vector2).MakeByRefType() }));
+            DimensionConversions.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.setPosOnly), new Type[] { typeof(Vector3).MakeByRefType() }));
+            DimensionConversions.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.set), new Type[] { typeof(Vector2).MakeByRefType(), typeof(Vector3).MakeByRefType() }));
+            DimensionConversions.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.set), new Type[] { typeof(Vector2).MakeByRefType(), typeof(float) }));
+            DimensionConversions.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.set), new Type[] { typeof(Vector3).MakeByRefType(), typeof(float) }));
+            DimensionConversions.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.set), new Type[] { typeof(Vector3).MakeByRefType(), typeof(Vector2).MakeByRefType() }));
+            DimensionConversions.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.set), new Type[] { typeof(Vector3).MakeByRefType(), typeof(Vector3).MakeByRefType() }));
         } 
         public static void Become3D()
         {
@@ -164,6 +187,11 @@ namespace WorldSphereMod
         {
             Sphere.Finish();
         }
+        public static void GetCamerRange(out int Min, out int Max)
+        {
+            RenderRange(Sphere.Manager, out Min, out Max);
+        }
+        public static PixelFlashEffects FlashLayer => World.world.flash_effects;
         public static bool Generated = false;
         public static bool GeneratingSphere => savedSettings.Is3D && !Generated;
         public static bool IsWorld3D => Sphere.Exists;
@@ -171,10 +199,12 @@ namespace WorldSphereMod
         public static class Sphere
         {
             public static float Radius => Manager.Radius;
+            public static int Width => Manager.Rows;
+            public static int Height => Manager.Cols;
             public static Transform CenterCapsule => Manager.transform.GetChild(0);
             public static bool Exists => Manager != null;
             #region Fancy stuff
-            static SphereManager Manager;
+            internal static SphereManager Manager;
             static Mesh CompoundSphereMesh;
             static Material CompoundSphereMaterial;
             static Texture2DArray Textures;
@@ -183,7 +213,6 @@ namespace WorldSphereMod
             #endregion
             public static List<MapLayer> BaseLayers;
             public static Dictionary<MapLayer, PixelArray> CachedColors;
-            public static PixelFlashEffects FlashLayer => World.world.flash_effects;
             public static void Begin()
             {
                 int width = MapBox.width;
@@ -203,9 +232,9 @@ namespace WorldSphereMod
             {
                 return ((Color)FlashLayer.pixels[Index]).Normalised();
             }
-            public static float InBounds(float X)
+            public static float InBounds(float X, float change = 0)
             {
-                return Manager.Clamp(X, 0);
+                return Manager.Clamp(X, change);
             }
             public static void UpdateScale(SphereTile Tile)
             {
@@ -238,11 +267,11 @@ namespace WorldSphereMod
                 }
                 Manager.Destroy();
             }
-            public static Vector3 CylindricalToCarteisan(float X, float Y, float Z)
+            public static Vector3 TilePosWithHeight(float X, float Y, float Z)
             {
                 return CylindricalToCartesian(Manager, X, Y, Z);
             }
-            public static Vector2 CylindricalToCarteisanFast(float X, float Y, float Z)
+            public static Vector2 TilePos(float X, float Y, float Z)
             {
                 return CylindricalToCartesianFast(Manager, X, Y, Z);
             }
@@ -258,7 +287,7 @@ namespace WorldSphereMod
                     CachedColors.Add(layer, new PixelArray(layer));
                 }
             }
-            public static Vector3 TilePos(float X, float Y, float Height = 0)
+            public static Vector3 SpherePos(float X, float Y, float Height = 0)
             {
                 return Manager.SphereTilePosition(X, Y, Height);
             }
@@ -271,7 +300,6 @@ namespace WorldSphereMod
                 BaseLayers.Remove(FlashLayer);
                 CreateCachedColors();
             }
-            static Func<Color32, Color32, bool> aredifferent = (Color32 first, Color32 secound) => { return !Tools.EqualsColor(first, secound); };
             public static int WorldTileTexture(WorldTile Tile)
             {
                 Tile Graphic = World.world.tilemap.getVariation(Tile);
@@ -354,6 +382,7 @@ namespace WorldSphereMod
                     if (sprite.texture.width != 8 || sprite.texture.height != 8)
                     {
                         //seperate a sprite from its atlas
+                        //this shit took me hours to solve
                         return sprite.PixelsFromSpriteAtlas();
                     }
                     return sprite.texture.GetPixels32();
