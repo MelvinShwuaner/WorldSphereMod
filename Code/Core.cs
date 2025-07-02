@@ -97,6 +97,7 @@ namespace WorldSphereMod
         //this mod makes the game 3D, of course im patching alot (rip compatibility)
         void Patch()
         {
+            Patch(typeof(LoopWithBrush));
             Patch(typeof(SphereControl));
             Patch(typeof(Dist3D));
             Patch(typeof(EffectPatches));
