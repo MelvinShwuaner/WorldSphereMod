@@ -31,7 +31,7 @@ namespace WorldSphereMod.TileMapToSphere
             Max /= 8;
             for (int i = Min; i < Max; i++)
             {
-                int I = (int)Tools.MathStuff.Clamp(CameraX, i, ZoneCamera._zone_manager.zones_total_x);
+                int I = (int)Tools.MathStuff.Wrap(CameraX, i, ZoneCamera._zone_manager.zones_total_x);
                 for(int j = 0; j < ZoneCamera._zone_manager.zones_total_y; j++)
                 {
                     TileZone tZone = ZoneCamera._zone_manager.getZone(I, j);

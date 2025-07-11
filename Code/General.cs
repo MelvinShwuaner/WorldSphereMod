@@ -1,12 +1,16 @@
-﻿using HarmonyLib;
+﻿using EpPathFinding.cs;
+using HarmonyLib;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
+using WorldSphereMod.NewCamera;
 namespace WorldSphereMod.General
 {
+    //this fuckass mod uses so much fucking transpilers i made my own fucking type for fucking easy use (im not going to fucking use it anyway)
+    public delegate IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions);
     public class SphereControl
     {
         [HarmonyPatch(typeof(MapBox), nameof(MapBox.finishMakingWorld))]
@@ -27,116 +31,58 @@ namespace WorldSphereMod.General
             SmoothLoader.add(delegate { Core.Become2D(); }, "Becoming 2D!");
         }
     }
-    public class GetTile3D
+    [HarmonyPatch(typeof(Actor), nameof(Actor.precalcMovementSpeed))]
+    public class actormovement3D
     {
-        public static void Prefix(ref int pX, ref int pY)
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            if (!Core.IsWorld3D)
+            CodeMatcher Matcher = new CodeMatcher(instructions);
+            Matcher.MatchForward(false, new CodeMatch(OpCodes.Ldfld, AccessTools.Field(typeof(SimGlobalAsset), nameof(SimGlobalAsset.unit_speed_multiplier))));
+            Matcher.Advance(1);
+            Matcher.Insert(new CodeInstruction(OpCodes.Mul), new CodeInstruction(OpCodes.Ldarg_0), new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Tools), nameof(Tools.GetDistSpeedMult))));
+            return Matcher.Instructions();
+        }
+    }
+    public class WorldLoop
+    {
+        public static void Tiles(ref int pX, ref int pY)
+        {
+            if (!Core.IsWorld3D && !Core.GeneratingSphere)
             {
                 return;
             }
             Tools.To3DBounds(ref pX, ref pY);
         }
+        [HarmonyPatch(typeof(ZoneCalculator), nameof(ZoneCalculator.getZone))]
+        [HarmonyPrefix]
+        static void Zones(ref int pX, ref int pY)
+        {
+            if (!Core.IsWorld3D && !Core.GeneratingSphere)
+            {
+                return;
+            }
+            pX = (int)Tools.MathStuff.Wrap(pX, 0, World.world.zone_calculator.zones_total_x);
+        }
+        [HarmonyPatch(typeof(MapChunkManager), nameof(MapChunkManager.get), new Type[] {typeof(int), typeof(int)})]
+        [HarmonyPrefix]
+        static void Chunks(ref int pX, ref int pY)
+        {
+            if (!Core.IsWorld3D && !Core.GeneratingSphere)
+            {
+                return;
+            }
+            pX = (int)Tools.MathStuff.Wrap(pX, 0, World.world.map_chunk_manager._get_amount_x);
+        }
     }
-    public class LoopWithBrush
+    public static class BrushTranspiler
     {
-        [HarmonyPatch(typeof(MapBox), nameof(MapBox.loopWithBrush), new Type[] { typeof(WorldTile), typeof(BrushData), typeof(PowerActionWithID), typeof(string) })]
-        [HarmonyPrefix]
-        static bool ID(WorldTile pCenterTile, BrushData pBrush, PowerActionWithID pAction, string pPowerID)
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            if (Core.IsWorld3D)
-            {
-                loopWithBrush(pCenterTile, pBrush, pAction, pPowerID);
-                return false;
-            }
-            return true;
-        }
-        static void loopWithBrush(WorldTile pCenterTile, BrushData pBrush, PowerActionWithID pAction, string pPowerID)
-        {
-            BrushPixelData[] tPos = pBrush.pos;
-            int tLen = tPos.Length;
-            for (int i = 0; i < tLen; i++)
-            {
-                BrushPixelData tPixelData = tPos[i];
-                int tX = pCenterTile.x + tPixelData.x;
-                int tY = pCenterTile.y + tPixelData.y;
-                Tools.To3DBounds(ref tX, ref  tY);
-                if (tX >= 0 && tX < MapBox.width && tY >= 0 && tY < MapBox.height)
-                {
-                    WorldTile tTile = MapBox.instance.GetTileSimple(tX, tY);
-                    pAction(tTile, pPowerID);
-                }
-            }
-        }
-        [HarmonyPatch(typeof(MapBox), nameof(MapBox.loopWithBrush), new Type[] { typeof(WorldTile), typeof(BrushData), typeof(PowerAction), typeof(GodPower) })]
-        [HarmonyPrefix]
-        static bool Power(WorldTile pCenterTile, BrushData pBrush, PowerAction pAction, GodPower pPower)
-        {
-            if (Core.IsWorld3D)
-            {
-                loopWithBrush(pCenterTile, pBrush, pAction, pPower);
-                return false;
-            }
-            return true;
-        }
-        static void loopWithBrush(WorldTile pCenterTile, BrushData pBrush, PowerAction pAction, GodPower power)
-        {
-            BrushPixelData[] tPos = pBrush.pos;
-            int tLen = tPos.Length;
-            for (int i = 0; i < tLen; i++)
-            {
-                BrushPixelData tPixelData = tPos[i];
-                int tX = pCenterTile.x + tPixelData.x;
-                int tY = pCenterTile.y + tPixelData.y;
-                Tools.To3DBounds(ref tX, ref tY);
-                if (tX >= 0 && tX < MapBox.width && tY >= 0 && tY < MapBox.height)
-                {
-                    WorldTile tTile = MapBox.instance.GetTileSimple(tX, tY);
-                    pAction(tTile, power);
-                }
-            }
-        }
-        [HarmonyPatch(typeof(MapBox), nameof(MapBox.loopWithBrushPowerForDropsRandom))]
-        [HarmonyPrefix]
-        static bool Random(WorldTile pCenterTile, BrushData pBrush, PowerAction pAction, GodPower pPower)
-        {
-            if (Core.IsWorld3D)
-            {
-                loopWithBrushPowerForDropsRandom(pCenterTile, pBrush, pAction, pPower);
-                return false;
-            }
-            return true;
-        }
-        static void loopWithBrushPowerForDropsRandom(WorldTile pCenterTile, BrushData pBrush, PowerAction pAction, GodPower pPower)
-        {
-            BrushPixelData[] tPos = pBrush.pos;
-            int tLen = tPos.Length;
-            using (ListPool<WorldTile> tListPool = new ListPool<WorldTile>())
-            {
-                for (int i = 0; i < tLen; i++)
-                {
-                    BrushPixelData tPixelData = tPos[i];
-                    int tX = pCenterTile.x + tPixelData.x;
-                    int tY = pCenterTile.y + tPixelData.y;
-                    Tools.To3DBounds(ref tX, ref tY);
-                    if (tX >= 0 && tX < MapBox.width && tY >= 0 && tY < MapBox.height)
-                    {
-                        WorldTile tTile = MapBox.instance.GetTileSimple(tX, tY);
-                        tListPool.Add(tTile);
-                    }
-                }
-                int tTotalDrops = pBrush.drops;
-                tListPool.Shuffle<WorldTile>();
-                for (int j = 0; j < tTotalDrops; j++)
-                {
-                    if (tListPool.Count == 0)
-                    {
-                        break;
-                    }
-                    WorldTile tTile2 = tListPool.Pop<WorldTile>();
-                    pAction(tTile2, pPower);
-                }
-            }
+            CodeMatcher Matcher = new CodeMatcher(instructions);
+            Matcher.MatchForward(false, new CodeMatch(OpCodes.Add));
+            Matcher.RemoveInstruction();
+            Matcher.Insert(new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Tools), nameof(Tools.AddLooped))));
+            return Matcher.Instructions();
         }
     }
     public class Dist3D
@@ -237,6 +183,17 @@ namespace WorldSphereMod.General
             return Matcher.Instructions();
         }
     }
+    public class Move3D
+    {
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            CodeMatcher Matcher = new CodeMatcher(instructions);
+            Matcher.MatchForward(false, new CodeMatch(OpCodes.Call, AccessTools.Method(typeof(Vector2), nameof(Vector2.MoveTowards))));
+            Matcher.RemoveInstruction();
+            Matcher.Insert(new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Tools), nameof(Tools.MoveTowards))));
+            return Matcher.Instructions();
+        }
+    }
     [HarmonyPatch(typeof(PlayerControl), nameof(PlayerControl.getMousePos))]
     public class MousePos3D
     {
@@ -268,8 +225,43 @@ namespace WorldSphereMod.General
         }
         static void UpdatePosition3D(Drop Drop)
         {
-            Drop.transform.position = Tools.To3D(Drop.current_position.x, Drop.current_position.y, Drop._currentHeightZ);
+            Drop.transform.position = Tools.To3D(Drop.current_position, Drop._currentHeightZ);
             Drop.transform.rotation = Tools.RotateToCameraAtTile(Drop.transform.position);
+        }
+    }
+    [HarmonyPatch(typeof(ParticleSystem), nameof(ParticleSystem.Emit), new Type[] {typeof(ParticleSystem.EmitParams), typeof(int) })]
+    public class FixParticles
+    {
+        static void Prefix(ref ParticleSystem.EmitParams emitParams)
+        {
+            if (Core.IsWorld3D)
+            {
+                emitParams.position = Tools.To3DTileHeight(emitParams.position);
+            }
+        }
+    }
+    [HarmonyPatch(typeof(AStarFinder), nameof(AStarFinder.FindPath))]
+    public class FixPathfinding
+    {
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            CodeMatcher Matcher = new CodeMatcher(instructions);
+            //first we find the all Subtract functions used to calculate node distance and replace them with a method that accounts for looping, but dont do this if its for the Y Axis
+            int Current = 0;
+            while(Matcher.FindNext(new CodeMatch(OpCodes.Sub)))
+            {
+                if(Current++ % 2 == 1)
+                {
+                    continue;
+                }
+                Matcher.RemoveInstruction();
+                Matcher.Insert(new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(FixPathfinding), nameof(SubLooped))));
+            }
+            return Matcher.Instructions();
+        }
+        public static int SubLooped(int x1, int x2)
+        {
+            return (int)Tools.MathStuff.WrappedDist(x1, x2);
         }
     }
 }

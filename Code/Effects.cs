@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using UnityEngine;
 using static WorldSphereMod.Effects.EffectManager;
+using static WorldSphereMod.Constants;
 namespace WorldSphereMod.Effects
 {
     public struct EffectData
@@ -55,24 +56,25 @@ namespace WorldSphereMod.Effects
             SpritePrefabs.Add(OriginalPrefab, sprite);
             return UnityEngine.Object.Instantiate(sprite);
         }
-        static void Add<TKey, TValue>(this ConcurrentDictionary<TKey, TValue> dict, TKey key, TValue value)
-        {
-            dict.TryAdd(key, value);
-        }
         internal static ConcurrentDictionary<Transform, GameObject> SpritePrefabs = new ConcurrentDictionary<Transform, GameObject>();
-        internal static ConcurrentDictionary<string, EffectData> EffectDatas = new ConcurrentDictionary<string, EffectData>()
-        {
-            {"fx_meteorite", new EffectData(false) },
-            {"fx_fire_smoke", new EffectData(false) },
-            {"fx_antimatter_effect", new EffectData(false) },
-            {"fx_boulder", new EffectData(true) },
-            {"fx_explosion_wave", new EffectData(false) },
-            {"fx_tile_effect", new EffectData(false) },
-            {"fx_cloud", new EffectData(false, true, 21, false) }
-        };
         public static void SetEffect3D(BaseEffect Effect, EffectData Data)
         {
-            if (!Effect.transform.position.Is3D())
+            Transform transform = Data.SeperateSprite ? Effect.sprite_renderer.transform : Effect.transform;
+            Vector3 Pos = Effect.transform.position;
+            bool Is3D = Pos.Is3D();
+            if (Is3D)
+            {
+                Pos = Pos.To2D();
+            }
+            if (Data.IsUpright)
+            {
+                RotateToPlayer(transform, Pos);
+            }
+            else
+            {
+                transform.rotation = Tools.GetRotation(Pos.AsIntClamped());
+            }
+            if (!Is3D)
             {
                 if (Data.SeperateSprite)
                 {
@@ -83,19 +85,11 @@ namespace WorldSphereMod.Effects
                     Effect.transform.position = ((Vector2)Effect.transform.position).To3D(Data.ExtraHeight + (Data.OnGround ? Tools.GetTileHeightSmooth(Effect.transform.position) : 0));
                 }
             }
-            Transform transform = Data.SeperateSprite ? Effect.sprite_renderer.transform : Effect.transform;
-            if (Data.IsUpright)
-            {
-                RotateToPlayer(transform, transform.position);
-            }
-            else
-            {
-               transform.rotation = Tools.GetRotation(transform.position.x, transform.position.y);
-            }
         }
         public static void RotateToPlayer(Transform transform, Vector3 Position)
         {
-            transform.rotation = Tools.RotateToCameraAtTile(Position);
+            Tools.GetCameraAngle(out Quaternion Rot, Position);
+            transform.rotation = Rot;
         }
         public static void UpdateSeperatedSprite(BaseEffect Effect, bool OnGround = true, float Height = 0)
         {
@@ -106,10 +100,10 @@ namespace WorldSphereMod.Effects
         {
             EffectData Data = GetData(Effect);
             Transform transform = Data.SeperateSprite ? Effect.sprite_renderer.transform : Effect.transform;
-            Vector3 Pos = transform.position;
-            if (!Pos.Is3D())
+            Vector3 Pos = Effect.transform.position;
+            if (!Data.SeperateSprite)
             {
-                Pos = Pos.To3D();
+                Pos = Pos.To2D();
             }
             if (Data.IsUpright)
             {
@@ -117,7 +111,14 @@ namespace WorldSphereMod.Effects
             }
             else
             {
-                transform.rotation = Tools.GetRotation(Pos.x, Pos.y);
+                try
+                {
+                    transform.rotation = Tools.GetRotation(Pos.AsIntClamped());
+                }
+                catch
+                {
+                    Debug.Log(Pos.AsIntClamped());
+                }
             }
             if (Data.SeperateSprite)
             {
@@ -318,7 +319,7 @@ namespace WorldSphereMod.Effects
         {
             if (__instance.spriteRenderer == null)
             {
-                __instance.spriteRenderer = __instance.GetComponent<BaseEffect>().sprite_renderer;
+                __instance.spriteRenderer = __instance.GetComponent<BaseEffect>()?.sprite_renderer;
             }
         }
         [HarmonyPatch(typeof(StatusParticle), nameof(StatusParticle.spawnParticle))]

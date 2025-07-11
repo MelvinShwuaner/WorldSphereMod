@@ -34,30 +34,30 @@ namespace WorldSphereMod.NewCamera
     //this manages the camera
     public static class CameraManager
     {
-        public static Vector2 Position => cam.transform.position;
+        public static Vector2 Position => Manager.transform.position;
         public static Transform transform => Camera.transform;
         public static void MakeCamera3D()
         {
             OriginalCamera.enabled = false;
             Camera.enabled = true;
-            Camera.transform.LookAt(Core.Sphere.CenterCapsule);
-            cam.mainCamera = Camera;
+            Manager.mainCamera = Camera;
         }
         public static void MakeCamera2D()
         {
             OriginalCamera.enabled = true;
             Camera.enabled = false;
-            cam.mainCamera = OriginalCamera;
+            Manager.mainCamera = OriginalCamera;
         }
         //i want to rename this function to prepare but for some reason that breaks something. this is so fucking random i have no fucking idea how thats even possible
         public static void Begin()
         {
             Camera = new GameObject("WorldSphere Camera").AddComponent<Camera>();
             Camera.gameObject.tag = "MainCamera";
-            cam = MoveCamera.instance;
-            OriginalCamera = cam.mainCamera;
+            Camera.transparencySortMode = TransparencySortMode.Default;
+            Manager = MoveCamera.instance;
+            OriginalCamera = Manager.mainCamera;
         }
-        public static MoveCamera cam;
+        public static MoveCamera Manager;
         public static Camera Camera;
         public static Camera OriginalCamera;
         public static float Height;
@@ -85,11 +85,11 @@ namespace WorldSphereMod.NewCamera
             bool Vertical = id.Contains("down") || id.Contains("up");
             if (Core.savedSettings.InvertedCameraMovement ? !Vertical : Vertical)
             {
-                cam._key_move_velocity.y += Change;
+                Manager._key_move_velocity.y += Change;
             }
             else
             {
-                cam._key_move_velocity.x += Change;
+                Manager._key_move_velocity.x += Change;
             }
         }
         public static bool Prefix(HotkeyAsset pAsset)
@@ -105,7 +105,7 @@ namespace WorldSphereMod.NewCamera
         {
             get
             {
-                return RotateCamera.Multiplier(RotateCamera.Rotation.y) * 5 / cam._target_zoom;
+                return RotateCamera.Multiplier(RotateCamera.Rotation.y) * 5 / Manager._target_zoom;
             }
         }
     }
@@ -117,7 +117,7 @@ namespace WorldSphereMod.NewCamera
         {
             if (Core.IsWorld3D)
             {
-                UpdatePanning(cam);
+                UpdatePanning(Manager);
                 return false;
             }
             return true;
@@ -133,7 +133,7 @@ namespace WorldSphereMod.NewCamera
         static void UpdateRotation(Vector2 Change)
         {
             Rotation.x = Mathf.Clamp(Rotation.x - Change.y, -90, 90);
-            Rotation.y = Tools.MathStuff.Clamp(Rotation.y, Change.x, 360);
+            Rotation.y = Tools.MathStuff.Wrap(Rotation.y, Change.x, 360);
             transform.rotation = Quaternion.Euler(Rotation);
         }
         //i dont know how this fucking works and im too scared to touch it
@@ -221,10 +221,10 @@ namespace WorldSphereMod.NewCamera
         static void ToBounds3D()
         {
             Vector3 pos = default;
-            pos.x = Core.Sphere.InBounds(cam.transform.position.x);
-            pos.y = Mathf.Clamp(cam.transform.position.y, 0, MapBox.height-0.5f);
+            pos.x = Core.Sphere.InBounds(Manager.transform.position.x);
+            pos.y = Mathf.Clamp(Manager.transform.position.y, 0, MapBox.height-0.5f);
             pos.z = -0.5f;
-            cam.transform.position = pos;
+            Manager.transform.position = pos;
             World.world.nameplate_manager.update();
         }
         static bool Prefix()
@@ -259,20 +259,20 @@ namespace WorldSphereMod.NewCamera
             int height = MapBox.height;
             if (width > height)
             {
-                cam.orthographicSizeMax = AsMaxHeight(width);
+                Manager.orthographicSizeMax = AsMaxHeight(width);
             }
             else
             {
-                cam.orthographicSizeMax = AsMaxHeight(height);
+                Manager.orthographicSizeMax = AsMaxHeight(height);
             }
-            if (tInitialZoom > cam.orthographicSizeMax)
+            if (tInitialZoom > Manager.orthographicSizeMax)
             {
-                tInitialZoom = (int)cam.orthographicSizeMax;
+                tInitialZoom = (int)Manager.orthographicSizeMax;
             }
-            cam._target_zoom = tInitialZoom;
-            cam.mainCamera.orthographicSize = Mathf.Clamp(cam._target_zoom, 10f, cam.orthographicSizeMax);
-            World.world.setZoomOrthographic(cam.mainCamera.orthographicSize);
-            cam.mainCamera.farClipPlane = 10000;
+            Manager._target_zoom = tInitialZoom;
+            Manager.mainCamera.orthographicSize = Mathf.Clamp(Manager._target_zoom, 10f, Manager.orthographicSizeMax);
+            World.world.setZoomOrthographic(Manager.mainCamera.orthographicSize);
+            Manager.mainCamera.farClipPlane = 10000;
         }
         static bool Prefix()
         {

@@ -1,22 +1,18 @@
 ﻿using CompoundSpheres;
 using UnityEngine;
 using WorldSphereMod.NewCamera;
-
+using static WorldSphereMod.Constants;
 namespace WorldSphereMod
 {
     public static class CompoundSphereScripts
     {
-        public const int ZDisplacement = 100;
         public static int SphereTileTexture(SphereTile Tile)
         {
             return Core.Sphere.WorldTileTexture(Tile.SphereToWorld());
         }
-        //a constant multiplier for tile heights
-        const float YConst = 1f/(81/ZConst);
-        public const float ZConst = 2f;
         public static Vector3 SphereTileScale(SphereTile Tile)
         {
-            float Height = Tools.TrueHeight(Tile.SphereToWorld().GetHeight());
+            float Height = Tools.TrueHeight(Tile.SphereToWorld().GetHeight(), Tile.SphereToWorld().main_type.render_z);
             return new Vector3(1, 1+(Height*YConst), Height*ZConst);
         }
         public static Vector3 SphereTileAddedColor(SphereTile Tile) {
@@ -24,7 +20,7 @@ namespace WorldSphereMod
         }
         public static Quaternion CylindricalRotation(SphereTile SphereTile)
         {
-            return Tools.GetRotation(SphereTile.Position.x, SphereTile.Position.y);
+            return Quaternion.AngleAxis(Tools.MathStuff.Angle(SphereTile.Position.y, SphereTile.Position.x), Vector3.forward) * ConstRot;
         }
         public static Color SphereTileColor(SphereTile SphereTile)
         {
@@ -60,7 +56,7 @@ namespace WorldSphereMod
             Cylinder.AddComponent<MeshCollider>();
             Cylinder.transform.parent = Manager.transform;
         }
-        public static DisplayMode getdisplaymode(SphereManager Manager)
+        public static DisplayMode getdisplaymode(SphereManager _)
         {
             return World.world.quality_changer.isLowRes() ? DisplayMode.ColorOnly : DisplayMode.TextureOnly;
         }
@@ -68,7 +64,7 @@ namespace WorldSphereMod
         static float BaseRange => 3 + (1-(1/RangeMult));
         public static void RenderRange(SphereManager SphereManager, out int Min, out int Max) 
         {
-           float Devide = BaseRange + (CameraManager.cam.orthographicSizeMax / CameraManager.Height / RangeMult);
+           float Devide = BaseRange + (CameraManager.Manager.orthographicSizeMax / CameraManager.Height / RangeMult);
            float Rows = SphereManager.Rows;
            Min = (int)-(Rows / Devide);
            Max = (int)(Rows / Devide); 

@@ -18,6 +18,8 @@ using System;
 using WorldSphereMod.TileMapToSphere;
 using WorldSphereMod.UI;
 using WorldSphereMod.QuantumSprites;
+using SleekRender;
+using ai.behaviours;
 namespace WorldSphereMod
 {
     class Core : MonoBehaviour, IMod, IStagedLoad
@@ -75,14 +77,27 @@ namespace WorldSphereMod
             savedSettings = loadedData;
             return true;
         }
+
         // go go gadget un-box my worldbox
         public void Init()
         {
             LoadSettings();
-            DimensionConversions.Prepare();
+            DimensionConverter.Prepare();
             Patch();
             WorldSphereTab.Begin();
             CameraManager.Begin();
+            DoSomeOtherStuff();
+        }
+        static void DoSomeOtherStuff()
+        {
+            AssetManager.options_library.get("vignette").action = delegate (OptionAsset pAsset)
+            {
+                CameraManager.OriginalCamera.GetComponent<SleekRenderPostProcess>().settings.vignetteEnabled = AssetManager.options_library.getSavedBool(pAsset.id);
+            };
+            AssetManager.options_library.get("bloom").action = delegate (OptionAsset pAsset)
+            {
+                CameraManager.OriginalCamera.GetComponent<SleekRenderPostProcess>().settings.bloomEnabled = AssetManager.options_library.getSavedBool(pAsset.id);
+            };
         }
         // load the textures after mods are loaded incase some mods add new world tiles
         public void PostInit()
@@ -90,28 +105,34 @@ namespace WorldSphereMod
             Sphere.Prepare();
         }
         const string HarmonyID = "WorldSphereMod";
-        void Patch(Type type)
-        {
-            Harmony.CreateAndPatchAll(type, HarmonyID);
-        }
         //this mod makes the game 3D, of course im patching alot (rip compatibility)
-        void Patch()
+        static void Patch()
         {
-            Patch(typeof(LoopWithBrush));
-            Patch(typeof(SphereControl));
-            Patch(typeof(Dist3D));
-            Patch(typeof(EffectPatches));
-            Patch(typeof(AddLayers));
-            Patch(typeof(QuantumSpritePatches));
+
             Patcher = new Harmony(HarmonyID);
             Patcher.PatchAll();
 
-            MethodInfo WorldLoopPatch = Method(typeof(GetTile3D), nameof(GetTile3D.Prefix));
+            Patcher.PatchAll(typeof(SphereControl));
+            Patcher.PatchAll(typeof(Dist3D));
+            Patcher.PatchAll(typeof(EffectPatches));
+            Patcher.PatchAll(typeof(AddLayers));
+            Patcher.PatchAll(typeof(QuantumSpritePatches));
+            Patcher.PatchAll(typeof(WorldLoop));
+            Patcher.PatchAll(typeof(SourcePatches));
+
+            MethodInfo WorldLoopPatch = Method(typeof(WorldLoop), nameof(WorldLoop.Tiles));
             Patcher.Patch(Method(typeof(GeneratorTool), nameof(GeneratorTool.getTile)), new HarmonyMethod(WorldLoopPatch));
             Patcher.Patch(Method(typeof(MapBox), nameof(MapBox.GetTile)), new HarmonyMethod(WorldLoopPatch));
 
             MethodInfo Lerp3DPatch = Method(typeof(Lerp3D), nameof(Lerp3D.Transpiler));
             Patcher.Patch(Method(typeof(PlayerControl), nameof(PlayerControl.clickedStart)), null, null, new HarmonyMethod(Lerp3DPatch));
+
+            HarmonyMethod brushTranspiler = new HarmonyMethod(Method(typeof(BrushTranspiler), nameof(BrushTranspiler.Transpiler)));
+            Patcher.Transpile(Method(typeof(MapAction), nameof(MapAction.applyTileDamage)), brushTranspiler);
+            Patcher.Transpile(Method(typeof(MapBox), nameof(MapBox.loopWithBrush), new Type[] { typeof(WorldTile), typeof(BrushData), typeof(PowerActionWithID), typeof(string) }), brushTranspiler);
+            Patcher.Transpile(Method(typeof(MapBox), nameof(MapBox.loopWithBrush), new Type[] { typeof(WorldTile), typeof(BrushData), typeof(PowerAction), typeof(GodPower) }), brushTranspiler);
+            Patcher.Transpile(Method(typeof(BehWormDigEat), nameof(BehWormDigEat.loopWithBrush)), brushTranspiler);
+            Patcher.Transpile(Method(typeof(MapBox), nameof(MapBox.loopWithBrushPowerForDropsRandom)), brushTranspiler);
 
             MethodInfo EffectPatch = Method(typeof(EffectPatches), nameof(EffectPatches.BasePatch));
             Patcher.Patch(Method(typeof(BaseEffect), nameof(BaseEffect.prepare), new Type[] { }), null, new HarmonyMethod(EffectPatch));
@@ -146,47 +167,40 @@ namespace WorldSphereMod
             Patcher.Transpile(Method(typeof(WorldLayerEdges), nameof(WorldLayerEdges.redrawTile)), MapLayerTranspiler);
             Patcher.Transpile(Method(typeof(ZoneCalculator), nameof(ZoneCalculator.applyMetaColorsToZone)), MapLayerTranspiler);
             Patcher.Transpile(Method(typeof(ZoneCalculator), nameof(ZoneCalculator.colorZone)), MapLayerTranspiler);
+
+            Patcher.Transpile(Method(typeof(Actor), nameof(Actor.updateMovement)), Move3D.Transpiler);
+
             //this is where the fun begins 
-            DimensionConversions.ConvertPositions(Method(typeof(Boulder), nameof(Boulder.updateCurrentPosition)), 1);
-            DimensionConversions.ConvertPositions(Method(typeof(Boulder), nameof(Boulder.actionLanded)));
+            DimensionConverter.ConvertPositions(Method(typeof(Boulder), nameof(Boulder.updateCurrentPosition)), 1);
+            DimensionConverter.ConvertPositions(Method(typeof(Boulder), nameof(Boulder.actionLanded)));
+            DimensionConverter.ConvertQuantum(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawShadowsBuildings)), DimensionConverter.ToQuantumNonUpright);
+            DimensionConverter.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawArrowQuantumSprite)));
+            DimensionConverter.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawUnitItems)));
+            DimensionConverter.ConvertQuantum(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawFires)), DimensionConverter.ToSpecial);
+            DimensionConverter.ConvertQuantum(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawShadowsUnit)), DimensionConverter.ToQuantumNonUpright);
+            DimensionConverter.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawUnitAttackRange)));
+            DimensionConverter.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawUnitSize)));
+            DimensionConverter.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawUnitsAvatars)));
+            DimensionConverter.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawLightAreas)));
 
-            DimensionConversions.ConvertBoth(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawUnits)));
-            DimensionConversions.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawShadowsBuildings)));
-            DimensionConversions.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawArrowQuantumSprite)));
-            DimensionConversions.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawUnitItems)));
-            DimensionConversions.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawFires)));
-            DimensionConversions.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawShadowsUnit)));
-            DimensionConversions.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawUnitAttackRange)));
-            DimensionConversions.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawUnitSize)));
-            DimensionConversions.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawUnitsAvatars)));
-            DimensionConversions.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawLightAreas)));
-
-            DimensionConversions.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.setPosOnly), new Type[] {typeof(Vector2)}));
-            DimensionConversions.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.setPosOnly), new Type[] { typeof(Vector2).MakeByRefType() }));
-            DimensionConversions.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.setPosOnly), new Type[] { typeof(Vector3).MakeByRefType() }));
-            DimensionConversions.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.set), new Type[] { typeof(Vector2).MakeByRefType(), typeof(Vector3).MakeByRefType() }));
-            DimensionConversions.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.set), new Type[] { typeof(Vector2).MakeByRefType(), typeof(float) }));
-            DimensionConversions.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.set), new Type[] { typeof(Vector3).MakeByRefType(), typeof(float) }));
-            DimensionConversions.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.set), new Type[] { typeof(Vector3).MakeByRefType(), typeof(Vector2).MakeByRefType() }));
-            DimensionConversions.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.set), new Type[] { typeof(Vector3).MakeByRefType(), typeof(Vector3).MakeByRefType() }));
+            DimensionConverter.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.setPosOnly), new Type[] {typeof(Vector2)}));
+            DimensionConverter.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.setPosOnly), new Type[] { typeof(Vector2).MakeByRefType() }));
+            DimensionConverter.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.setPosOnly), new Type[] { typeof(Vector3).MakeByRefType() }));
+            DimensionConverter.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.set), new Type[] { typeof(Vector2).MakeByRefType(), typeof(Vector3).MakeByRefType() }));
+            DimensionConverter.ConvertQuantum(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.set), new Type[] { typeof(Vector2).MakeByRefType(), typeof(float) }), DimensionConverter.ToQuantum);
+            DimensionConverter.ConvertQuantum(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.set), new Type[] { typeof(Vector3).MakeByRefType(), typeof(float) }), DimensionConverter.ToQuantumWithHeight);
+            DimensionConverter.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.set), new Type[] { typeof(Vector3).MakeByRefType(), typeof(Vector2).MakeByRefType() }));
+            DimensionConverter.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.set), new Type[] { typeof(Vector3).MakeByRefType(), typeof(Vector3).MakeByRefType() }));
         } 
         public static void Become3D()
         {
-            CreateSphere();
+            Sphere.Begin();
             CameraManager.MakeCamera3D();
         }
         public static void Become2D()
         {
-            DestroySphere();
-            CameraManager.MakeCamera2D();
-        }
-        public static void CreateSphere()
-        {
-            Sphere.Begin();
-        }
-        public static void DestroySphere()
-        {
             Sphere.Finish();
+            CameraManager.MakeCamera2D();
         }
         public static void GetCamerRange(out int Min, out int Max)
         {
@@ -290,7 +304,7 @@ namespace WorldSphereMod
             }
             public static Vector3 SpherePos(float X, float Y, float Height = 0)
             {
-                return Manager.SphereTilePosition(X, Y, Height);
+                return CartesianToCylindrical(Manager, X, Y, Height);
             }
             public static void Prepare()
             {
