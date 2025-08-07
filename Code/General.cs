@@ -1,12 +1,10 @@
 ﻿using EpPathFinding.cs;
 using HarmonyLib;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
-using WorldSphereMod.NewCamera;
 namespace WorldSphereMod.General
 {
     //this fuckass mod uses so much fucking transpilers i made my own fucking type for fucking easy use (im not going to fucking use it anyway)
@@ -276,13 +274,21 @@ namespace WorldSphereMod.General
             return x1 - x2;
         }
     }
+    [HarmonyPatch(typeof(Actor), nameof(Actor.addChildren))]
     public static class FixCrabzilla { 
-       public static void Init()
+       public static void Postfix(Actor __instance)
         {
-            GameObject Crabzilla = Resources.Load<GameObject>("actors/" + "p_crabzilla");
-            foreach(Transform transform in Crabzilla.transform.GetAllChildren())
+            if (!Core.IsWorld3D)
             {
-                transform.localPosition = new Vector3(transform.localPosition.x, transform.localPosition.y, 0);
+                return;
+            }
+            if (__instance.asset.avatar_prefab == "p_crabzilla")
+            {
+                GameObject Crabzilla = __instance.avatar;
+                foreach (Transform transform in Crabzilla.transform.GetAllChildren())
+                {
+                    transform.localPosition = new Vector3(transform.localPosition.x, transform.localPosition.y, 0);
+                }
             }
         }
     }

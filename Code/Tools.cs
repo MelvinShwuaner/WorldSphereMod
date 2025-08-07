@@ -10,16 +10,10 @@ using static WorldSphereMod.Constants;
 using System.Collections.Concurrent;
 using WorldSphereMod.General;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 namespace WorldSphereMod
 {
     public static class Tools
     {
-        public static string Combine(params string[] paths)
-        {
-            return new FileInfo(paths.Aggregate("", Path.Combine)).FullName;
-        }
         public static void AddChildrenToList(this Transform Transform, ref List<Transform> list)
         {
             foreach(Transform transform in Transform)
@@ -154,9 +148,10 @@ namespace WorldSphereMod
         {
             return Tile.WorldToSphere().Scale.z * 0.5f;
         }
-        public static bool EqualsColor(this Color32 mycolor, Color32 color)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe bool EqualsColor(this Color32 mycolor, Color32 color)
         {
-            return mycolor.a == color.a && mycolor.r == color.r && mycolor.g == color.g && mycolor.b == color.b;
+            return *(uint*)&mycolor == *(uint*)&color;
         }
         public static Vector2 Direction3D(Vector2 v1, Vector2 v2)
         {
@@ -369,14 +364,7 @@ namespace WorldSphereMod
         {
             return pTile.DisplayedType().render_z;
         }
-        public static Color Blend(this Color backColor, Color color)
-        {
-            float amount = color.a;
-            float r = color.r * amount + backColor.r * (1 - amount);
-            float g = color.g * amount + backColor.g * (1 - amount);
-            float b = color.b * amount + backColor.b * (1 - amount);
-            return new Color(r, g, b);
-        }
+        
         #region Rotations
         public static Quaternion AsQuaternion(this Vector3 Angle)
         {
@@ -446,13 +434,16 @@ namespace WorldSphereMod
             return GetUprightRotation(Pos.To2D().AsInt());
         }
         #endregion
-        public static Color Normalised(this Color Color)
+        public static Color32 Normalised(this Color32 color)
         {
-            float amount = Color.a;
-            float r = Color.r * amount;
-            float g = Color.g * amount;
-            float b = Color.b * amount;
-            return new Color(r, g, b);
+            if (color.a == 255) return color;
+            if (color.a == 0) return new Color32(0, 0, 0, 0);
+
+            byte r = (byte)(color.r * color.a / 255);
+            byte g = (byte)(color.g * color.a / 255);
+            byte b = (byte)(color.b * color.a / 255);
+
+            return new Color32(r, g, b, color.a);
         }
         public static int Index(this SphereTile Tile)
         {

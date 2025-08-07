@@ -230,7 +230,7 @@ namespace WorldSphereMod.NewCamera
     [HarmonyPatch(typeof(PixelDetector), nameof(PixelDetector.IntersectsSprite))]
     public class GetSphereTileUnderMouse
     {
-        //who knew that finding the position your mouse touches on a fucking 3d tube is simpler the finding it on a fucking 2d square
+        //who knew that finding the position your mouse touches on a 3d tube is simpler the finding it on a 2d square
         static bool Prefix(Ray ray, ref Vector2Int pVector, ref bool __result)
         {
             if (Core.IsWorld3D)

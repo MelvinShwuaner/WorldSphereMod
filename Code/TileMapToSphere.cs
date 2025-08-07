@@ -446,7 +446,7 @@ namespace WorldSphereMod.TileMapToSphere
         }
         void Set(int I, Color32 Color)
         {
-            if (!Layer.pixels[I].EqualsColor(Color))
+           // if (!Layer.pixels[I].EqualsColor(Color))
             {
                 Layer.pixels[I] = Color;
                 AddLayer(Layer, I);

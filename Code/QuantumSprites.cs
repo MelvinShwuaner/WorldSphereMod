@@ -33,9 +33,9 @@ namespace WorldSphereMod.QuantumSprites
             {
                 Object._last_pos_v2 = pPosition;
                 Object._last_pos_v3 = pPosition;
-                if (!pAsset.IsQuantumSpriteUpright())
+                if (!pAsset.IsQuantumSpriteSpecial())
                 {
-                    Object.m_transform.ToSpecial(Object._last_pos_v3);
+                    Object.m_transform.ToQuantumNonUpright(Object._last_pos_v3);
                 }
                 else
                 {
@@ -106,7 +106,7 @@ namespace WorldSphereMod.QuantumSprites
                 Object.setScale(pScale);
             }
         }
-        public static bool IsQuantumSpriteUpright(this QuantumSpriteAsset pAsset)
+        public static bool IsQuantumSpriteSpecial(this QuantumSpriteAsset pAsset)
         {
             return pAsset.id == "selected_units" || pAsset.id == "draw_building_stockpiles";
         }

@@ -72,7 +72,6 @@ namespace WorldSphereMod
             {
                 CameraManager.OriginalCamera.GetComponent<SleekRenderPostProcess>().settings.bloomEnabled = AssetManager.options_library.getSavedBool(pAsset.id);
             };
-            FixCrabzilla.Init();
         }
         // load the textures after mods are loaded incase some mods add new world tiles
         public static void PostInit()
@@ -160,7 +159,7 @@ namespace WorldSphereMod
 
             DimensionConverter.ConvertQuantum(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawShadowsBuildings)), DimensionConverter.ToQuantumNonUpright);
             DimensionConverter.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawArrowQuantumSprite)));
-            DimensionConverter.ConvertQuantum(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawFires)), DimensionConverter.ToSpecial);
+            DimensionConverter.ConvertQuantum(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawFires)), DimensionConverter.ToFire);
             DimensionConverter.ConvertQuantum(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawShadowsUnit)), DimensionConverter.ToQuantumNonUpright);
             DimensionConverter.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawUnitAttackRange)));
             DimensionConverter.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawUnitSize)));
@@ -224,18 +223,33 @@ namespace WorldSphereMod
                 int height = MapBox.height;
                 Manager = SphereManager.Creator.CreateSphereManager(width, height, SphereManagerConfig);
             }
-            public static Color32 GetColor(int Index)
+            public static Color32 GetColor(int index)
             {
-                Color color = World.world.world_layer.pixels[Index];
-                foreach(MapLayer layer in BaseLayers)
+                Color32 dst = World.world.world_layer.pixels[index];
+
+                int r = dst.r * dst.a;
+                int g = dst.g * dst.a;
+                int b = dst.b * dst.a;
+                int a = dst.a;
+
+                foreach (MapLayer layer in BaseLayers)
                 {
-                    color = color.Blend(layer.pixels[Index]);
+                    Color32 src = layer.pixels[index];
+                    if (src.a == 0) continue;
+
+                    int invSrcA = 255 - src.a;
+
+                    r = (src.r * src.a + r * invSrcA) / 255;
+                    g = (src.g * src.a + g * invSrcA) / 255;
+                    b = (src.b * src.a + b * invSrcA) / 255;
+                    a = (src.a + a * invSrcA / 255);
                 }
-                return color;
+
+                return new Color32((byte)r, (byte)g, (byte)b, (byte)Mathf.Clamp(a, 0, 255));
             }
             public static Color GetAddedColor(int Index)
             {
-                return ((Color)FlashLayer.pixels[Index]).Normalised();
+                return FlashLayer.pixels[Index].Normalised();
             }
             public static float InBounds(float X, float change = 0)
             {
@@ -341,8 +355,7 @@ namespace WorldSphereMod
                     CompoundSphereMesh,
                     CompoundSphereMaterial,
                     RenderRange,
-                    new List<IBufferData>() { new CustomBufferData<Vector3>("AddedColors", 12, SphereTileAddedColor) },
-                    3
+                    new List<IBufferData>() { new CustomBufferData<Vector3>("AddedColors", 12, SphereTileAddedColor) }
                );
             }
             static void CreateTextures()
