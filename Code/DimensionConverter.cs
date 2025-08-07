@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
@@ -10,19 +11,17 @@ using static HarmonyLib.AccessTools;
 using static WorldSphereMod.Constants;
 namespace WorldSphereMod
 {
-    public delegate void ToQuantum(Transform transform, Vector3 position);
     //i fucking hate my life
     public static class DimensionConverter
     {
+        public delegate void ToQuantumDelegate(Transform transform, Vector3 position);
         static Harmony Patcher => Core.Patcher;
         static HarmonyMethod PositionTranspiler;
-        static HarmonyMethod RotationTranspiler;
         static HarmonyMethod QuantumTranspiler;
         public static void Prepare()
         {
             ToTranspile = new List<int>();
             PositionTranspiler = new HarmonyMethod(Method(typeof(TranspilerPosition), nameof(TranspilerPosition.Transpiler)));
-            RotationTranspiler = new HarmonyMethod(Method(typeof(TranspilerRotation), nameof(TranspilerRotation.Transpiler)));
             QuantumTranspiler = new HarmonyMethod(Method(typeof(TranspilerQuantum), nameof(TranspilerQuantum.Transpiler)));
         }
         static void CheckToTranspile(int[] totranspile)
@@ -35,12 +34,7 @@ namespace WorldSphereMod
             CheckToTranspile(totranspile);
             Patcher.Transpile(Method, PositionTranspiler);
         }
-        public static void ConvertRotations(MethodInfo Method, params int[] totranspile)
-        {
-            CheckToTranspile(totranspile);
-            Patcher.Transpile(Method, RotationTranspiler);
-        }
-        public static void ConvertQuantum(MethodInfo Method, ToQuantum To3D, params int[] totranspile)
+        public static void ConvertQuantum(MethodInfo Method, ToQuantumDelegate To3D, params int[] totranspile)
         {
             CheckToTranspile(totranspile);
             TranspilerQuantum.ToQuantum = To3D.Method;
@@ -83,7 +77,19 @@ namespace WorldSphereMod
             v = v.ConvertTo3D();
             transform.position = v;
             transform.rotation = Tools.GetUprightRotation(v);
-            QuantumSprites.QuantumSpriteManager.RotateToCamera(transform);
+            QuantumSprites.Manager.RotateToCamera(transform);
+        }
+        public static void YToZ(this Transform transform, Vector3 v)
+        {
+            if (!Core.IsWorld3D)
+            {
+                transform.position = v;
+                return;
+            }
+            v = Tools.To3D(v.x, v.y - v.z, v.z);
+            transform.position = v;
+            transform.rotation = Tools.GetUprightRotation(v);
+            QuantumSprites.Manager.RotateToCamera(transform);
         }
         public static void ToQuantumWithHeight(this Transform transform, Vector3 v)
         {
@@ -98,7 +104,7 @@ namespace WorldSphereMod
             }
             transform.position = v;
             transform.rotation = Tools.GetUprightRotation(v);
-            QuantumSprites.QuantumSpriteManager.RotateToCamera(transform);
+            QuantumSprites.Manager.RotateToCamera(transform);
         }
         public static void ToQuantumNonUpright(this Transform transform, Vector3 v)
         {
@@ -145,7 +151,7 @@ namespace WorldSphereMod
             v = Tools.To3D(v);
             transform.position = v;
             transform.rotation = Tools.GetUprightRotation(v);
-            QuantumSprites.QuantumSpriteManager.RotateToCamera(transform);
+            QuantumSprites.Manager.RotateToCamera(transform);
         }
         #endregion
         public static void Rotation3D(this Transform transform, Vector3 v)
@@ -164,7 +170,7 @@ namespace WorldSphereMod
                 }
                 else
                 {
-                    transform.forward = CameraManager.Camera.transform.forward;
+                    transform.forward = CameraManager.MainCamera.transform.forward;
                 }
             }
 
@@ -224,28 +230,6 @@ namespace WorldSphereMod
                     }
                     Matcher.RemoveInstruction();
                     Matcher.Insert(new CodeInstruction(OpCodes.Callvirt, ToQuantum));
-                }
-                return Matcher.Instructions();
-            }
-        }
-        class TranspilerRotation
-        {
-            static MethodInfo SetRotation => Method(typeof(Transform), "set_eulerAngles");
-            static MethodInfo To3D => Method(typeof(DimensionConverter), nameof(Rotation3D));
-            static Func<CodeInstruction, bool> IsSet => (CodeInstruction instruction) => instruction.opcode == OpCodes.Callvirt && instruction.operand is MethodInfo method && (method == SetRotation);
-            //this transpiler converts a transforms position to 2d space whenever read, and to 3D space when written
-            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
-            {
-                CodeMatcher Matcher = new CodeMatcher(instructions, generator);
-                int Current = 0;
-                while (Matcher.FindNext(new CodeMatch((CodeInstruction instruction) => IsSet(instruction))))
-                {
-                    if (!ToTranspile.Contains(Current++) && ToTranspile.Count != 0)
-                    {
-                        continue;
-                    }
-                    Matcher.RemoveInstruction();
-                    Matcher.Insert(new CodeInstruction(OpCodes.Call, To3D));
                 }
                 return Matcher.Instructions();
             }

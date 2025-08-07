@@ -1,14 +1,15 @@
 ﻿using HarmonyLib;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection.Emit;
 using System.Threading.Tasks;
 using UnityEngine;
 using WorldSphereMod.NewCamera;
-using static WorldSphereMod.QuantumSprites.QuantumSpriteManager;
+using static WorldSphereMod.QuantumSprites.Manager;
 namespace WorldSphereMod.QuantumSprites
 {
-    public static class QuantumSpriteManager
+    public static class Manager
     {
         //warning, if rotation not set beforehand, the sprite will go woosh woosh
         public static void RotateToCamera(Transform transform)
@@ -17,7 +18,7 @@ namespace WorldSphereMod.QuantumSprites
             {
                 if (!Core.savedSettings.RotateStuffToCameraAdvanced)
                 {
-                    transform.rotation *= Quaternion.LookRotation(CameraManager.Camera.transform.forward);
+                    transform.rotation *= Quaternion.LookRotation(CameraManager.MainCamera.transform.forward);
                 }
                 else
                 {
@@ -138,6 +139,22 @@ namespace WorldSphereMod.QuantumSprites
             }
             return true;
         }
+        [HarmonyPatch(typeof(QuantumSpriteManager), nameof(QuantumSpriteManager.hideAll))]
+        [HarmonyPostfix]
+        static void ResetSprites()
+        {
+            foreach (QuantumSpriteAsset quantumSpriteAsset in AssetManager.quantum_sprites.list)
+            {
+                QuantumSpriteGroupSystem group_system = quantumSpriteAsset.group_system;
+                if (group_system != null)
+                {
+                    foreach(QuantumSprite sprite in group_system._sprites.Where((QuantumSprite sprite) => sprite != null))
+                    {
+                        sprite.setRotation(ref Constants.Zero);
+                    }
+                }
+            }
+        }
         [HarmonyPatch(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.showLightAt))]
         [HarmonyPrefix]
         private static bool showLightAt(Vector2 pPos, Color pColor, float pScale = 1f)
@@ -205,14 +222,13 @@ namespace WorldSphereMod.QuantumSprites
             CodeMatcher Matcher = new CodeMatcher(instructions, generator);
             Matcher.MatchForward(false, new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.set), new Type[] { typeof(Vector3).MakeByRefType(), typeof(float) })));
             Matcher.RemoveInstruction();
-            Matcher.Insert(new CodeInstruction(OpCodes.Ldarg_0), new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(QuantumSpriteManager), nameof(QuantumSpriteManager.set))));
+            Matcher.Insert(new CodeInstruction(OpCodes.Ldarg_0), new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(Manager), nameof(Manager.set))));
             return Matcher.Instructions();
         }
     }
     //better to patch data from the source if rotations are handled differently, or weird shit happens
     public static class SourcePatches
     {
-        //i only need to change 2 LINES OF CODE. I WOULD USE A TRANSPILER, BUT THIS FUCKASS FUNCTION USES A DELEGATE, WHICH I CANNOT FUCKING TRANSPILE
         [HarmonyPatch(typeof(ActorManager), nameof(ActorManager.precalculateRenderDataParallel))]
         [HarmonyPrefix]
         public static bool calculateactordata3D(ActorManager __instance)
@@ -235,7 +251,7 @@ namespace WorldSphereMod.QuantumSprites
                 {
                     Actor tActor = tArray[tIndex];
                     Vector3 tActorScale = tActor.current_scale;
-                    Vector3 tCurrentActorPos = tActor.Get3DPos();
+                    Vector3 tCurrentActorPos = tActor.updatePos().To3DTileHeight(true);
                     Vector3 tActorRotation = tActor.Get3DRot();
                     bool tHasRenderedItem = tActor.checkHasRenderedItem();
                     bool tHasNormalRender = !tActor.asset.ignore_generic_render;
@@ -325,17 +341,14 @@ namespace WorldSphereMod.QuantumSprites
                                 tFrameDataPosX = tFrameData.pos_item.x;
                                 tFrameDataPosY = tFrameData.pos_item.y;
                             }
-                            float tX = tCurrentActorPos.x + tFrameDataPosX * tActorScale.x;
-                            float tY = tCurrentActorPos.y + tFrameDataPosY * tActorScale.y;
-                            float tZ = -0.01f + tFrameDataPosY * tActorScale.y;
+                            float tX = tFrameDataPosX * tActorScale.x;
+                            float tY = tFrameDataPosY * tActorScale.y;
                             Vector3 tItemPosition = new Vector3(tX, tY);
                             Vector3 tAngle = tActorRotation;
                             if (tAngle.y != 0f || tAngle.z != 0f)
                             {
-                                Vector3 t_pivot = new Vector3(tCurrentActorPos.x, tCurrentActorPos.y, 0f);
-                                tItemPosition = Toolbox.RotatePointAroundPivot(ref tItemPosition, ref t_pivot, ref tAngle);
+                                tItemPosition = Tools.RotateLocalPointAroundPivot(ref tItemPosition, ref tCurrentActorPos, ref tAngle);
                             }
-                            tItemPosition.z = tZ;
                             __instance.render_data.item_pos[tIndex] = tItemPosition;
                         }
                     }
@@ -343,6 +356,7 @@ namespace WorldSphereMod.QuantumSprites
             });
             return false;
         }
+        //i only need to change 2 LINES OF CODE. I WOULD USE A TRANSPILER, BUT THIS FUCKASS FUNCTION USES A DELEGATE, WHICH I CANNOT FUCKING TRANSPILE
         [HarmonyPatch(typeof(BuildingManager), nameof(BuildingManager.precalculateRenderDataParallel))]
         [HarmonyPrefix]
         public static bool calculatebuildindata3D(BuildingManager __instance)

@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Concurrent;
 using UnityEngine;
 using WorldSphereMod.Effects;
 
@@ -13,6 +10,8 @@ namespace WorldSphereMod
         //a constant multiplier for tile heights
         public const float YConst = 1f / (81 / ZConst);
         public const float ZConst = 1f;
+        //square root of 1/2
+        public const float HalfRoot = 0.70710678118f;
         //idk
         public const float TileHeightDiffSpeed = 0.8f;
 
@@ -32,5 +31,6 @@ namespace WorldSphereMod
         };
         public const int SpecialHeight = 1;
         public static Vector3 HighlightedZoneSize = new Vector3(1, 1 + (10 * YConst), 1);
+        public static Vector3 Zero = Vector3.zero;
     }
 }

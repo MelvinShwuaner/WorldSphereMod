@@ -35,64 +35,73 @@ namespace WorldSphereMod.NewCamera
     public static class CameraManager
     {
         public static Vector2 Position => Manager.transform.position;
-        public static Transform transform => Camera.transform;
+        public static Transform transform => MainCamera.transform;
         public static void MakeCamera3D()
         {
             OriginalCamera.enabled = false;
-            Camera.enabled = true;
-            Manager.mainCamera = Camera;
+            MainCamera.enabled = true;
+            Manager.mainCamera = MainCamera;
         }
         public static void MakeCamera2D()
         {
             OriginalCamera.enabled = true;
-            Camera.enabled = false;
+            MainCamera.enabled = false;
             Manager.mainCamera = OriginalCamera;
         }
         //i want to rename this function to prepare but for some reason that breaks something. this is so fucking random i have no fucking idea how thats even possible
         public static void Begin()
         {
-            Camera = new GameObject("WorldSphere Camera").AddComponent<Camera>();
-            Camera.gameObject.tag = "MainCamera";
-            Camera.transparencySortMode = TransparencySortMode.Default;
+            MainCamera = new GameObject("WorldSphere Camera").AddComponent<Camera>();
+            MainCamera.gameObject.tag = "MainCamera";
+            MainCamera.transparencySortMode = TransparencySortMode.Default;
             Manager = MoveCamera.instance;
             OriginalCamera = Manager.mainCamera;
         }
         public static MoveCamera Manager;
-        public static Camera Camera;
+        public static Camera MainCamera;
         public static Camera OriginalCamera;
         public static float Height;
+        public static float MaxHeight => Manager.orthographicSizeMax;
         static void Postfix()
         {
             if (!Core.IsWorld3D)
             {
                 return;
             }
-            Camera.transform.position = Core.Sphere.SpherePos(Position.x, Position.y, Height);
+            MainCamera.transform.position = Core.Sphere.SpherePos(Position.x, Position.y, Height/2);
             Bench.bench("Draw Sphere", "game_total"); //im not even sure if the lag is actually tracked
             Core.Sphere.DrawTiles((int)Position.x);
             Bench.benchEnd("Draw Sphere", "game_total");
         }
     }
-    [HarmonyPatch(typeof(MoveCamera), nameof(MoveCamera.move))]
-    //would use a transpiler, but the c# compiler is a fucking bitch
     public class MovementEnhancement
     {
-        public static void Move(HotkeyAsset pAsset)
+        public static Vector3 GetMovementVector(float Speed, bool Vertical)
         {
-            string id = pAsset.id;
-            float tMove = MoveCamera.getMoveDistance(pAsset.id.StartsWith("fast_")) * Mult;
-            float Change = id.Contains("up") || id.Contains("right") ? tMove : -tMove;
-            bool Vertical = id.Contains("down") || id.Contains("up");
+            Vector3 vector;
             if (Core.savedSettings.InvertedCameraMovement ? !Vertical : Vertical)
             {
-                Manager._key_move_velocity.y += Change;
+                vector = -transform.forward * Speed;
+                vector.x *= RotateCamera.InvertMult;
             }
             else
             {
-                Manager._key_move_velocity.x += Change;
+                vector = transform.right * Speed;
+                vector.x *= RotateCamera.InvertMult;
             }
+            return new Vector2(vector.z, vector.x);
         }
-        public static bool Prefix(HotkeyAsset pAsset)
+        public static void Move(HotkeyAsset pAsset)
+        {
+            string id = pAsset.id;
+            float tMove = MoveCamera.getMoveDistance(pAsset.id.StartsWith("fast_")) * 5 / Manager._target_zoom;
+            float Change = id.Contains("up") || id.Contains("right") ? tMove : -tMove;
+            bool Vertical = id.Contains("down") || id.Contains("up");
+            Manager._key_move_velocity += GetMovementVector(Change, Vertical);
+        }
+        [HarmonyPatch(typeof(MoveCamera), nameof(MoveCamera.move))]
+        [HarmonyPrefix]
+        public static bool movecamera(HotkeyAsset pAsset)
         {
             if (Core.IsWorld3D)
             {
@@ -101,17 +110,43 @@ namespace WorldSphereMod.NewCamera
             }
             return true;
         }
-        static float Mult
+        [HarmonyPatch(typeof(ControllableUnit), nameof(ControllableUnit.updateMovementVectorKeyboard))]
+        [HarmonyPostfix]
+        public static void movepossesed()
         {
-            get
+            if (ControllableUnit._movement_vector != Vector2.zero)
             {
-                return RotateCamera.Multiplier(RotateCamera.Rotation.y) * 5 / Manager._target_zoom;
+                UpdatePossesed();
+            }
+        }
+        public static void UpdatePossesed()
+        {
+            if(ControllableUnit._movement_vector.y != 0)
+            {
+                ControllableUnit._movement_vector = GetMovementVector(ControllableUnit._movement_vector.y, true);
+            }
+            else
+            {
+                ControllableUnit._movement_vector = GetMovementVector(ControllableUnit._movement_vector.x, false);
+            }
+        }
+        [HarmonyPatch(typeof(ControllableUnit), nameof(ControllableUnit.updateMovementVectorJoystick))]
+        [HarmonyPostfix]
+        public static void movepossesedjoystick()
+        {
+            if (ControllableUnit.isMovementActionActive())
+            {
+                UpdatePossesed();
             }
         }
     }
     [HarmonyPatch(typeof(MoveCamera), nameof(MoveCamera.updateMouseCameraDrag))]
     public class RotateCamera
     {
+        public static float InvertMult
+        {
+            get { return Rotation.x < 90 || Rotation.x > 270 ? 2 : -2; }
+        }
         public static Vector2 Rotation = Vector2.zero;
         static bool Prefix()
         {
@@ -122,18 +157,10 @@ namespace WorldSphereMod.NewCamera
             }
             return true;
         }
-        public static int Multiplier(float Rot, float Max = 180, float Min = 0)
-        {
-            if (Rot < Max && Rot > Min)
-            {
-                return -1;
-            }
-            return 1;
-        }
         static void UpdateRotation(Vector2 Change)
         {
-            Rotation.x = Mathf.Clamp(Rotation.x - Change.y, -90, 90);
-            Rotation.y = Tools.MathStuff.Wrap(Rotation.y, Change.x, 360);
+            Rotation.x = Tools.MathStuff.Wrap(Rotation.x, -Change.y, 360);
+            Rotation.y = Rotation.y + (Change.x * InvertMult);
             transform.rotation = Quaternion.Euler(Rotation);
         }
         //i dont know how this fucking works and im too scared to touch it
@@ -242,7 +269,7 @@ namespace WorldSphereMod.NewCamera
     {
         static float AsMaxHeight(float Num)
         {
-            return Num/2;
+            return Num;
         }
         static void ResetZoom()
         {

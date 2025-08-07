@@ -22,7 +22,7 @@ namespace WorldSphereMod
         {
             return Quaternion.AngleAxis(Tools.MathStuff.Angle(SphereTile.Position.y, SphereTile.Position.x), Vector3.forward) * ConstRot;
         }
-        public static Color SphereTileColor(SphereTile SphereTile)
+        public static Color32 SphereTileColor(SphereTile SphereTile)
         {
             return Core.Sphere.GetColor(SphereTile.Index());
         }

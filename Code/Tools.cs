@@ -8,12 +8,32 @@ using static WorldSphereMod.Tools.MathStuff;
 using System.Runtime.CompilerServices;
 using static WorldSphereMod.Constants;
 using System.Collections.Concurrent;
-using System.Linq;
 using WorldSphereMod.General;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 namespace WorldSphereMod
 {
     public static class Tools
     {
+        public static string Combine(params string[] paths)
+        {
+            return new FileInfo(paths.Aggregate("", Path.Combine)).FullName;
+        }
+        public static void AddChildrenToList(this Transform Transform, ref List<Transform> list)
+        {
+            foreach(Transform transform in Transform)
+            {
+                list.Add(transform);
+                AddChildrenToList(transform, ref list);
+            }
+        }
+        public static List<Transform> GetAllChildren(this Transform transform)
+        {
+            List<Transform> Children = new List<Transform>();
+            AddChildrenToList(transform, ref Children);
+            return Children;
+        }
         public static void Transpile(this Harmony harmony, MethodInfo Method, HarmonyMethod Transpiler)
         {
             harmony.Patch(Method, null, null, Transpiler);
@@ -21,6 +41,10 @@ namespace WorldSphereMod
         public static void Transpile(this Harmony harmony, MethodInfo Method, Transpiler Transpiler)
         {
             harmony.Transpile(Method, new HarmonyMethod(Transpiler.Method));
+        }
+        public static Vector3 RotateLocalPointAroundPivot(ref Vector3 point, ref Vector3 pivot, ref Vector3 angles)
+        {
+            return Quaternion.Euler(angles) * point + pivot;
         }
         public static bool FindNext(this CodeMatcher Matcher, params CodeMatch[] matches)
         {
@@ -169,7 +193,7 @@ namespace WorldSphereMod
                 return Tile.TileHeight();
             }
             Vector2Int posrounded = new Vector2Int(Mathf.RoundToInt(SubPos.x), Mathf.RoundToInt(SubPos.y));
-            return Mathf.LerpUnclamped(Tile.TileHeight(), ToTile.TileHeight(), 1f-(Dist(SubPos.x, SubPos.y, posrounded.x, posrounded.y)*2));
+            return Mathf.LerpUnclamped(Tile.TileHeight(), ToTile.TileHeight(), HalfRoot - Vector2.Distance(SubPos, posrounded));
         }
         public static Vector3 To3DTileHeight(this Vector2 v, float ExtraHeight = 0)
         {
@@ -209,11 +233,6 @@ namespace WorldSphereMod
             GetCameraAngle(out Quaternion rot, Building.cur_transform_position, Building.IsUpright());
             return (rot * Rot).eulerAngles;
         }
-        public static Vector3 Get3DPos(this Actor tActor)
-        {
-            Vector3 Pos = tActor.updatePos();
-            return Pos.To3DTileHeight(true);
-        }
         public static Vector3 Get3DRot(this Actor tActor)
         {
             if (!tActor.IsUpright())
@@ -221,7 +240,7 @@ namespace WorldSphereMod
                 return GetRotation(tActor.cur_transform_position.AsIntClamped()).eulerAngles;
             }
             Quaternion Rot = tActor.updateRotation().AsQuaternion();
-            GetCameraAngle(out Quaternion rot, tActor.cur_transform_position.AsIntClamped());
+            GetCameraAngle(out Quaternion rot, tActor.cur_transform_position);
             return (rot * Rot).eulerAngles;
         }
         public static float TrueHeight(int HeightID, int BaseHeight = -1) => HeightID switch
@@ -404,21 +423,21 @@ namespace WorldSphereMod
         {
             return GetUprightRotation(Pos) * RotateToCamera(Pos);
         }
-        public static bool GetCameraAngle(out Quaternion quaternion, Vector2 position, bool Upright = true)
+        public static bool GetCameraAngle(out Quaternion quaternion, Vector3 position, bool Upright = true)
         {
             if (Core.savedSettings.RotateStuffToCamera && Upright)
             {
                 if (!Core.savedSettings.RotateStuffToCameraAdvanced)
                 {
-                    quaternion = Quaternion.LookRotation(CameraManager.Camera.transform.forward);
+                    quaternion = Quaternion.LookRotation(CameraManager.MainCamera.transform.forward);
                 }
                 else
                 {
-                    quaternion = RotateToCameraAtTile(position.AsInt());
+                    quaternion = RotateToCameraAtTile(position.AsIntClamped());
                 }
                 return true;
             }
-            quaternion = Upright ? GetUprightRotation(position.AsInt()) : GetRotation(position.AsInt());
+            quaternion = Upright ? GetUprightRotation(position.AsInt()) : GetRotation(position.AsIntClamped());
             return false;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -456,10 +475,6 @@ namespace WorldSphereMod
             }
             return Type;
         }
-        public static Vector2Int Pos(this TileZone Zone)
-        {
-            return new Vector2Int(Zone.x, Zone.y);
-        }
         public static Vector2 MoveTowards(Vector2 current, Vector2 target, float maxDistanceDelta)
         {
             if (!Core.IsWorld3D)
@@ -468,15 +483,18 @@ namespace WorldSphereMod
             }
             return WrappedMoveTowards(current, target, maxDistanceDelta, Core.Sphere.Width);
         }
-        //the only times the game uses this, the z axis is 0
         public static Vector3 MoveTowardsV3(Vector3 current, Vector3 target, float maxDistanceDelta)
         {
-            return MoveTowards(current, target, maxDistanceDelta);
+            if (!Core.IsWorld3D)
+            {
+                return Vector3.MoveTowards(current, target, maxDistanceDelta);
+            }
+            return WrappedMoveTowards(current, target, maxDistanceDelta, Core.Sphere.Width);
         }
         //behold,the class i had to use ai for
         public static class MathStuff
         {
-            public static Vector2 WrappedMoveTowards(Vector2 current, Vector2 target, float maxDistanceDelta, float worldWidth)
+            public static Vector3 WrappedMoveTowards(Vector3 current, Vector3 target, float maxDistanceDelta, float worldWidth)
             {
                 float dx = target.x - current.x;
                 if (Mathf.Abs(dx) > worldWidth / 2f)
@@ -486,7 +504,7 @@ namespace WorldSphereMod
                     else
                         target.x += worldWidth;
                 }
-                Vector2 newPos = Vector2.MoveTowards(current, target, maxDistanceDelta);
+                Vector3 newPos = Vector3.MoveTowards(current, target, maxDistanceDelta);
                 if (newPos.x < 0)
                     newPos.x += worldWidth;
                 else if (newPos.x >= worldWidth)

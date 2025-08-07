@@ -1,4 +1,6 @@
-﻿using NeoModLoader.General;
+﻿#define NMLMOD
+#if NMLMOD
+using NeoModLoader.General;
 using NeoModLoader.General.UI.Tab;
 using UnityEngine;
 using UnityEngine.UI;
@@ -208,3 +210,4 @@ namespace WorldSphereMod.UI
         }
     }
 }
+#endif

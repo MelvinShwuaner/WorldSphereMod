@@ -188,9 +188,17 @@ namespace WorldSphereMod.General
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             CodeMatcher Matcher = new CodeMatcher(instructions);
-            Matcher.MatchForward(false, new CodeMatch(OpCodes.Call, AccessTools.Method(typeof(Vector2), nameof(Vector2.MoveTowards))));
-            Matcher.RemoveInstruction();
-            Matcher.Insert(new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Tools), nameof(Tools.MoveTowards))));
+            Matcher.MatchForward(false, new CodeMatch((CodeInstruction instruct) => instruct.opcode == OpCodes.Call && instruct.operand is MethodInfo info && info.Name == "MoveTowards"));
+            if ((Matcher.Operand as MethodInfo).DeclaringType == typeof(Vector2))
+            {
+                Matcher.RemoveInstruction();
+                Matcher.Insert(new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Tools), nameof(Tools.MoveTowards))));
+            }
+            else if((Matcher.Instruction.operand as MethodInfo).DeclaringType == typeof(Vector3))
+            {
+                Matcher.RemoveInstruction();
+                Matcher.Insert(new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Tools), nameof(Tools.MoveTowardsV3))));
+            }
             return Matcher.Instructions();
         }
     }
@@ -261,7 +269,21 @@ namespace WorldSphereMod.General
         }
         public static int SubLooped(int x1, int x2)
         {
-            return (int)Tools.MathStuff.WrappedDist(x1, x2);
+            if (Core.IsWorld3D)
+            {
+                return (int)Tools.MathStuff.WrappedDist(x1, x2);
+            }
+            return x1 - x2;
+        }
+    }
+    public static class FixCrabzilla { 
+       public static void Init()
+        {
+            GameObject Crabzilla = Resources.Load<GameObject>("actors/" + "p_crabzilla");
+            foreach(Transform transform in Crabzilla.transform.GetAllChildren())
+            {
+                transform.localPosition = new Vector3(transform.localPosition.x, transform.localPosition.y, 0);
+            }
         }
     }
 }

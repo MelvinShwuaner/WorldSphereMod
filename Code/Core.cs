@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using HarmonyLib;
-using NeoModLoader.api;
 using CompoundSpheres;
 using NeoModLoader.utils;
 using NeoModLoader.constants;
@@ -22,33 +21,8 @@ using SleekRender;
 using ai.behaviours;
 namespace WorldSphereMod
 {
-    class Core : MonoBehaviour, IMod, IStagedLoad
+    public static class Core
     {
-        #region NML shit
-        public ModDeclare GetDeclaration()
-        {
-            return declare;
-        }
-        public GameObject GetGameObject()
-        {
-            return Object;
-        }
-        public void OnLoad(ModDeclare pModDecl, GameObject pGameObject)
-        {
-            declare = pModDecl;
-            Object = pGameObject;
-            if (!SystemInfo.supportsInstancing || !SystemInfo.supportsComputeShaders || !SystemInfo.supportsIndirectArgumentsBuffer)
-            {
-                throw new IncompatibleHardwareException();
-            }
-        }
-        public string GetUrl()
-        {
-            return "https://github.com/MelvinShwuaner?tab=repositories";
-        }
-        public static GameObject Object;
-        ModDeclare declare;
-        #endregion
         public static SavedSettings savedSettings = new SavedSettings();
         public static string SettingsVersion = "1.0.0";
 
@@ -79,12 +53,12 @@ namespace WorldSphereMod
         }
 
         // go go gadget un-box my worldbox
-        public void Init()
+        public static void Init()
         {
             LoadSettings();
+            WorldSphereTab.Begin();
             DimensionConverter.Prepare();
             Patch();
-            WorldSphereTab.Begin();
             CameraManager.Begin();
             DoSomeOtherStuff();
         }
@@ -98,14 +72,16 @@ namespace WorldSphereMod
             {
                 CameraManager.OriginalCamera.GetComponent<SleekRenderPostProcess>().settings.bloomEnabled = AssetManager.options_library.getSavedBool(pAsset.id);
             };
+            FixCrabzilla.Init();
         }
         // load the textures after mods are loaded incase some mods add new world tiles
-        public void PostInit()
+        public static void PostInit()
         {
             Sphere.Prepare();
         }
         const string HarmonyID = "WorldSphereMod";
         //this mod makes the game 3D, of course im patching alot (rip compatibility)
+        //literally the core function of the mod
         static void Patch()
         {
 
@@ -115,10 +91,12 @@ namespace WorldSphereMod
             Patcher.PatchAll(typeof(SphereControl));
             Patcher.PatchAll(typeof(Dist3D));
             Patcher.PatchAll(typeof(EffectPatches));
+            Patcher.PatchAll(typeof(MovementEnhancement));
             Patcher.PatchAll(typeof(AddLayers));
             Patcher.PatchAll(typeof(QuantumSpritePatches));
             Patcher.PatchAll(typeof(WorldLoop));
             Patcher.PatchAll(typeof(SourcePatches));
+            Patcher.PatchAll(typeof(FixCrabzilla));
 
             MethodInfo WorldLoopPatch = Method(typeof(WorldLoop), nameof(WorldLoop.Tiles));
             Patcher.Patch(Method(typeof(GeneratorTool), nameof(GeneratorTool.getTile)), new HarmonyMethod(WorldLoopPatch));
@@ -169,13 +147,19 @@ namespace WorldSphereMod
             Patcher.Transpile(Method(typeof(ZoneCalculator), nameof(ZoneCalculator.colorZone)), MapLayerTranspiler);
 
             Patcher.Transpile(Method(typeof(Actor), nameof(Actor.updateMovement)), Move3D.Transpiler);
+            Patcher.Transpile(Method(typeof(Actor), nameof(Actor.tryToAttack)), Move3D.Transpiler);
+            Patcher.Transpile(Method(typeof(MapBox), nameof(MapBox.checkAttackFor)), Move3D.Transpiler);
+            Patcher.Transpile(Method(typeof(Actor), nameof(Actor.updatePossessedMovementTowards)), Move3D.Transpiler);
+            Patcher.Transpile(Method(typeof(CombatActionLibrary), nameof(CombatActionLibrary.getAttackTargetPosition)), Move3D.Transpiler);
+            Patcher.Transpile(Method(typeof(MusicBoxContainerTiles), nameof(MusicBoxContainerTiles.calculatePan)), Move3D.Transpiler);
 
             //this is where the fun begins 
             DimensionConverter.ConvertPositions(Method(typeof(Boulder), nameof(Boulder.updateCurrentPosition)), 1);
             DimensionConverter.ConvertPositions(Method(typeof(Boulder), nameof(Boulder.actionLanded)));
+            DimensionConverter.ConvertQuantum(Method(typeof(Santa), nameof(Santa.updatePosition)), DimensionConverter.YToZ);
+
             DimensionConverter.ConvertQuantum(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawShadowsBuildings)), DimensionConverter.ToQuantumNonUpright);
             DimensionConverter.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawArrowQuantumSprite)));
-            DimensionConverter.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawUnitItems)));
             DimensionConverter.ConvertQuantum(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawFires)), DimensionConverter.ToSpecial);
             DimensionConverter.ConvertQuantum(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawShadowsUnit)), DimensionConverter.ToQuantumNonUpright);
             DimensionConverter.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawUnitAttackRange)));
@@ -191,6 +175,12 @@ namespace WorldSphereMod
             DimensionConverter.ConvertQuantum(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.set), new Type[] { typeof(Vector3).MakeByRefType(), typeof(float) }), DimensionConverter.ToQuantumWithHeight);
             DimensionConverter.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.set), new Type[] { typeof(Vector3).MakeByRefType(), typeof(Vector2).MakeByRefType() }));
             DimensionConverter.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.set), new Type[] { typeof(Vector3).MakeByRefType(), typeof(Vector3).MakeByRefType() }));
+
+            DimensionConverter.ConvertPositions(Method(typeof(CrabLeg), nameof(CrabLeg.update)));
+            DimensionConverter.ConvertPositions(Method(typeof(CrabLeg), nameof(CrabLeg.moveLeg)));
+            DimensionConverter.ConvertPositions(Method(typeof(CrabLegJoint), nameof(CrabLegJoint.isAngleOk)));
+            DimensionConverter.ConvertPositions(Method(typeof(CrabLegJoint), nameof(CrabLegJoint.LateUpdate)), 5, 6, 7, 8);
+            DimensionConverter.ConvertPositions(Method(typeof(Crabzilla), nameof(Crabzilla.update)), 1, 2, 3, 4);
         } 
         public static void Become3D()
         {
@@ -234,7 +224,7 @@ namespace WorldSphereMod
                 int height = MapBox.height;
                 Manager = SphereManager.Creator.CreateSphereManager(width, height, SphereManagerConfig);
             }
-            public static Color GetColor(int Index)
+            public static Color32 GetColor(int Index)
             {
                 Color color = World.world.world_layer.pixels[Index];
                 foreach(MapLayer layer in BaseLayers)

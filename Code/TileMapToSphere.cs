@@ -290,7 +290,14 @@ namespace WorldSphereMod.TileMapToSphere
         {
             QuantumSpriteManager.update();
             Bench.bench("redraw_tiles", "game_total", false);
-            Redraw3DTiles();
+            if (Core.IsWorld3D)
+            {
+                Redraw3DTiles();
+            }
+            else
+            {
+                World.world.tilemap.redrawTiles();
+            }
             Bench.benchEnd("redraw_tiles", "game_total", false, 0L, false);
             Bench.bench("update_debug_texts", "game_total", false);
             World.world.updateDebugGroupSystem();
@@ -309,18 +316,17 @@ namespace WorldSphereMod.TileMapToSphere
                 }
                 Bench.benchEnd("redraw_mini_map", "game_total", false, 0L, false);
                 Bench.bench("Refresh Sphere", "game_total");
-                Core.Sphere.RefreshSphere();
+                if (Core.IsWorld3D)
+                {
+                    Core.Sphere.RefreshSphere();
+                }
                 Bench.benchEnd("Refresh Sphere", "game_total");
             }
         }
         static bool Prefix()
         {
-            if (Core.IsWorld3D)
-            {
-                render3DStuff();
-                return false;
-            }
-            return true;
+          render3DStuff();
+          return false;
         }
     }
     public static class AddLayers
