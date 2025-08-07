@@ -1,6 +1,4 @@
-﻿#define NMLMOD
-#if NMLMOD
-using NeoModLoader.General;
+﻿using NeoModLoader.General;
 using NeoModLoader.General.UI.Tab;
 using UnityEngine;
 using UnityEngine.UI;
@@ -51,18 +49,18 @@ namespace WorldSphereMod.UI
 
         static void CreateTab()
         {
-            ModIcon = Resources.Load<Sprite>("ModResources/icon");
+            ModIcon = Resources.Load<Sprite>("WorldSphereMod/icon");
             Tab = TabManager.CreateTab("WorldSphereMod", "WorldSphereMod", "A Mod that makes your game 3D!", ModIcon, "Created by Lord Melvin");
         }
         static void CreateButtons()
         {
-            CreateToggleButton("Is3D", "ModResources/icon", "Is 3D", "This is ONLY applied once you reload the world", Toggle3D, Core.savedSettings.Is3D);
-            CreateToggleButton("InvertedCamera", "ModResources/icon", "Inverted Camera", "if true, the horizontal and vertical movement of the camera will be swapped, if 3D", ToggleCamera, Core.savedSettings.InvertedCameraMovement);
-            // CreateToggleButton("InvertedWorld", "ModResources/icon", "Inverted World", "fuck my life", ToggleWorld, Core.savedSettings.InvertedWorld);
-            CreateWindowButton("Sprite Settings", "ModResources/icon", "Sprite Settings", "settings about the sprites in the game", "WARNING! THESE ARE EXPENSIVE", new List<ButtonData>()
+            CreateToggleButton("Is3D", "WorldSphereMod/icon", "Is 3D", "This is ONLY applied once you reload the world", Toggle3D, Core.savedSettings.Is3D);
+            CreateToggleButton("InvertedCamera", "WorldSphereMod/icon", "Inverted Camera", "if true, the horizontal and vertical movement of the camera will be swapped, if 3D", ToggleCamera, Core.savedSettings.InvertedCameraMovement);
+            // CreateToggleButton("InvertedWorld", "WorldSphereMod/icon", "Inverted World", "fuck my life", ToggleWorld, Core.savedSettings.InvertedWorld);
+            CreateWindowButton("Sprite Settings", "WorldSphereMod/icon", "Sprite Settings", "settings about the sprites in the game", "WARNING! THESE ARE EXPENSIVE", new List<ButtonData>()
             {
-               new ButtonData("Sprites Rotate To Camera", "will sprites rotate to the camera?", "ModResources/icon", Core.savedSettings.RotateStuffToCamera, ToggleRotations),
-               new ButtonData("Advanced Rotations", "sprites will rotate to the camera in a less buggy, but more expensive method!", "ModResources/icon", Core.savedSettings.RotateStuffToCameraAdvanced, ToggleAdvancedRotations)
+               new ButtonData("Sprites Rotate To Camera", "will sprites rotate to the camera?", "WorldSphereMod/icon", Core.savedSettings.RotateStuffToCamera, ToggleRotations),
+               new ButtonData("Advanced Rotations", "sprites will rotate to the camera in a less buggy, but more expensive method!", "WorldSphereMod/icon", Core.savedSettings.RotateStuffToCameraAdvanced, ToggleAdvancedRotations)
             }
            );
         }
@@ -210,4 +208,3 @@ namespace WorldSphereMod.UI
         }
     }
 }
-#endif

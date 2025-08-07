@@ -161,7 +161,7 @@ namespace WorldSphereMod.QuantumSprites
         {
             QuantumSprite next = QuantumSpriteLibrary.light_areas.group_system.getNext();
             next.setnotupright(ref pPos, pScale);
-            next.setColor(ref QuantumSpriteLibrary.light_areas.color);
+            Debug.Log(QuantumSpriteLibrary.light_areas.color);
             return false;
         }
         [HarmonyPatch(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawSocialize))]

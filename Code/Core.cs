@@ -336,6 +336,7 @@ namespace WorldSphereMod
                 WrappedAssetBundle ab = AssetBundleUtils.GetAssetBundle("worldsphere");
                 CompoundSphereMesh = ab.GetObject<Mesh>("assets/worldspheremod/compoundspheremesh.asset");
                 CompoundSphereMaterial = ab.GetObject<Material>("assets/worldspheremod/compoundspherematerial.mat");
+                LibraryMaterials.instance._night_affected_colors.Add(CompoundSphereMaterial);
             }
             public static SphereTile GetTile(int X, int Y)
             {

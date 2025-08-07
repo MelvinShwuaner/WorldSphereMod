@@ -4,5 +4,5 @@
     "version": "1.0.0",
     "description": "A Mod that makes your game 3D! if the Icon is red, it means your computer does not support this mod.",
     "GUID": "The 3D WorldBox Mod",
-    "iconPath":  "GameResources/ModResources/icon.png"
+    "iconPath":  "GameResources/WorldSphereMod/icon.png"
 }
