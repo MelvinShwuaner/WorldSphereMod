@@ -26,7 +26,7 @@ namespace WorldSphereMod.TileMapToSphere
         {
             ZoneCamera.clear();
             int CameraX = (int)CameraManager.Position.x / 8;
-            Core.GetCamerRange(out int Min, out int Max);
+            Core.Sphere.GetCamerRange(out int Min, out int Max);
             Min /= 8;
             Max /= 8;
             for (int i = Min; i < Max; i++)

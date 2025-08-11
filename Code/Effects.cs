@@ -111,14 +111,7 @@ namespace WorldSphereMod.Effects
             }
             else
             {
-                try
-                {
-                    transform.rotation = Tools.GetRotation(Pos.AsIntClamped());
-                }
-                catch
-                {
-                    Debug.Log(Pos.AsIntClamped());
-                }
+               transform.rotation = Tools.GetRotation(Pos.AsIntClamped());
             }
             if (Data.SeperateSprite)
             {

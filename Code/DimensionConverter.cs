@@ -63,11 +63,6 @@ namespace WorldSphereMod
             }
             return Tools.To3D(v);
         }
-        public static void SetQuantumRotation(this Transform transform, Quaternion rot)
-        {
-            Vector3 eular = rot.eulerAngles;
-            transform.GetComponent<GroupSpriteObject>().setRotation(ref eular);
-        }
         #endregion
         #region quantum
         public static void ToQuantum(this Transform transform, Vector3 v)
@@ -77,11 +72,9 @@ namespace WorldSphereMod
                 transform.position = v;
                 return;
             }
-            v = v.ConvertTo3D();
-            transform.position = v;
-            transform.rotation = Tools.GetUprightRotation(v);
+            transform.position = v.ConvertTo3D();
+            transform.rotation = Tools.GetUprightRotation(v.AsInt());
             QuantumSprites.Manager.RotateToCamera(transform);
-            transform.SetQuantumRotation(transform.rotation);
         }
         public static void YToZ(this Transform transform, Vector3 v)
         {
@@ -90,11 +83,9 @@ namespace WorldSphereMod
                 transform.position = v;
                 return;
             }
-            v = Tools.To3D(v.x, v.y - v.z, v.z);
-            transform.position = v;
-            transform.rotation = Tools.GetUprightRotation(v);
+            transform.position = Tools.To3D(v.x, v.y - v.z, v.z);
+            transform.rotation = Tools.GetUprightRotation(v.AsInt());
             QuantumSprites.Manager.RotateToCamera(transform);
-            transform.SetQuantumRotation(transform.rotation);
         }
         public static void ToQuantumWithHeight(this Transform transform, Vector3 v)
         {
@@ -103,14 +94,9 @@ namespace WorldSphereMod
                 transform.position = v;
                 return;
             }
-            if (!v.Is3D())
-            {
-                v = v.To3DTileHeight(true);
-            }
-            transform.position = v;
-            transform.rotation = Tools.GetUprightRotation(v);
+            transform.position = v.To3DTileHeight(true);
+            transform.rotation = Tools.GetUprightRotation(v.AsInt());
             QuantumSprites.Manager.RotateToCamera(transform);
-            transform.SetQuantumRotation(transform.rotation);
         }
         public static void ToQuantumNonUpright(this Transform transform, Vector3 v)
         {
@@ -120,8 +106,7 @@ namespace WorldSphereMod
                 return;
             }
             transform.position = v.ConvertTo3D();
-            transform.rotation = Tools.GetRotation(v);
-            transform.SetQuantumRotation(transform.rotation);
+            transform.rotation = Tools.GetRotation(v.AsIntClamped());
         }
         #endregion
         #region special
@@ -133,8 +118,7 @@ namespace WorldSphereMod
                 return;
             }
             transform.position = Tools.To3DTileHeight(v, 0.4f);
-            transform.rotation = Tools.GetRotation(v.AsIntClamped());
-            transform.SetQuantumRotation(transform.rotation);
+            transform.rotation = Tools.GetRotation(v.AsInt());
         }
         //osama bin laden once said "this type of shit, is why i bomb people"
         public static void ToSpecialNonUprightWithHeight(this Transform transform, Vector3 v)
@@ -145,8 +129,7 @@ namespace WorldSphereMod
                 return;
             }
             transform.position = Tools.To3DTileHeight(v, SpecialHeight);
-            transform.rotation = Tools.GetRotation(v);
-            transform.SetQuantumRotation(transform.rotation);
+            transform.rotation = Tools.GetRotation(v.AsIntClamped());
         }
         public static void ToSpecialUpright(this Transform transform, Vector3 v)
         {
@@ -155,11 +138,9 @@ namespace WorldSphereMod
                 transform.position = v;
                 return;
             }
-            v = Tools.To3D(v);
-            transform.position = v;
-            transform.rotation = Tools.GetUprightRotation(v);
+            transform.position = v.To3D();
+            transform.rotation = Tools.GetUprightRotation(v.AsInt());
             QuantumSprites.Manager.RotateToCamera(transform);
-            transform.SetQuantumRotation(transform.rotation);
         }
         #endregion
         static List<int> ToTranspile;
@@ -204,7 +185,7 @@ namespace WorldSphereMod
             static MethodInfo SetPosition => Method(typeof(Transform), "set_position");
             public static MethodInfo ToQuantum;
             static Func<CodeInstruction, bool> IsSet => (CodeInstruction instruction) => instruction.opcode == OpCodes.Callvirt && instruction.operand is MethodInfo method && (method == SetPosition || method == SetLocalPosition);
-            //this transpiler converts a transforms position to 2d space whenever read, and to 3D space when written
+            //this transpiler converts a transforms position to 3D space when written, but it calls a special function
             public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
             {
                 CodeMatcher Matcher = new CodeMatcher(instructions, generator);

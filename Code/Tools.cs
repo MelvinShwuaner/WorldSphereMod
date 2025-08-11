@@ -126,6 +126,10 @@ namespace WorldSphereMod
         {
             return new Vector2Int((int)Vector.x, (int)Vector.y);
         }
+        public static Vector2Int AsIntClamped(this Vector2 Vector)
+        {
+            return new Vector2Int(Math.Clamp((int)Vector.x, 0, Core.Sphere.Width - 1), Math.Clamp((int)Vector.y, 0, Core.Sphere.Height - 1));
+        }
         public static bool IntersectMesh(Ray ray, out Vector2 pVector)
         {
             pVector = Vector2Int.zero;
@@ -202,7 +206,7 @@ namespace WorldSphereMod
         {
             return v.z >= ZDisplacement;
         }
-        public static Vector3 To2D(this Vector3 v)
+        public static Vector2 To2D(this Vector3 v)
         {
             return To2D(v.x, v.y, v.z);
         }
@@ -354,7 +358,7 @@ namespace WorldSphereMod
             {
                 return x1 + X2;
             }
-            return (int)Core.Sphere.InBounds(x1, X2);
+            return (int)Wrap(x1, X2, Core.Sphere.Width);
         }
         public static void To3DBounds(ref int pX, ref int pY)
         {
@@ -364,25 +368,20 @@ namespace WorldSphereMod
         {
             return pTile.DisplayedType().render_z;
         }
-        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2Int AsInt(this Vector3 Vector)
+        {
+            return new Vector2Int((int)Vector.x, (int)Vector.y);
+        }
         #region Rotations
         public static Quaternion AsQuaternion(this Vector3 Angle)
         {
             return Quaternion.Euler(Angle);
         }
-        public static Quaternion GetRotation(Vector3 Pos)
-        {
-            return GetRotation(Pos.AsIntClamped());
-        }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Quaternion GetRotation(Vector2Int Pos)
         {
             return Core.Sphere.GetTile(Pos.x, Pos.y).Rotation;
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2Int AsInt(this Vector3 Vector)
-        {
-            return new Vector2Int((int)Vector.x, (int)Vector.y);
         }
         public static Vector2Int AsIntClamped(this Vector3 Vector)
         {
@@ -402,11 +401,6 @@ namespace WorldSphereMod
         {
             return RotateToCamera(Pos.To2D());
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Quaternion RotateToCameraAtTile(Vector3 Pos)
-        {
-            return GetUprightRotation(Pos) * RotateToCamera(ref Pos);
-        }
         public static Quaternion RotateToCameraAtTile(Vector2Int Pos)
         {
             return GetUprightRotation(Pos) * RotateToCamera(Pos);
@@ -425,13 +419,8 @@ namespace WorldSphereMod
                 }
                 return true;
             }
-            quaternion = Upright ? GetUprightRotation(position.AsInt()) : GetRotation(position.AsIntClamped());
+            quaternion = Upright ? GetUprightRotation(position.AsIntClamped()) : GetRotation(position.AsIntClamped());
             return false;
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Quaternion GetUprightRotation(Vector3 Pos)
-        {
-            return GetUprightRotation(Pos.To2D().AsInt());
         }
         #endregion
         public static Color32 Normalised(this Color32 color)
@@ -468,7 +457,7 @@ namespace WorldSphereMod
         }
         public static Vector2 MoveTowards(Vector2 current, Vector2 target, float maxDistanceDelta)
         {
-            if (!Core.IsWorld3D)
+            if (!Core.IsWorld3D || !Core.Sphere.IsWrapped)
             {
                 return Vector2.MoveTowards(current, target, maxDistanceDelta);
             }
@@ -476,7 +465,7 @@ namespace WorldSphereMod
         }
         public static Vector3 MoveTowardsV3(Vector3 current, Vector3 target, float maxDistanceDelta)
         {
-            if (!Core.IsWorld3D)
+            if (!Core.IsWorld3D || !Core.Sphere.IsWrapped)
             {
                 return Vector3.MoveTowards(current, target, maxDistanceDelta);
             }
@@ -529,6 +518,10 @@ namespace WorldSphereMod
             }
             public static float WrappedDist(float a, float b)
             {
+                if (!Core.Sphere.IsWrapped)
+                {
+                    return a - b;
+                }
                 return WrappedDist(a, b, Core.Sphere.Width);
             }
             public static float Angle(float y, float x)
@@ -553,6 +546,10 @@ namespace WorldSphereMod
             public static float Wrap(float Pos, float Change, float Max)
             {
                 Pos += Change;
+                if (!Core.Sphere.IsWrapped)
+                {
+                    return Pos;
+                }
                 if (Pos < 0)
                 {
                     return Max + Pos;

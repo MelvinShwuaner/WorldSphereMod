@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿using CompoundSpheres;
+using HarmonyLib;
 using UnityEngine;
 using static WorldSphereMod.NewCamera.CameraManager;
 namespace WorldSphereMod.NewCamera
@@ -69,6 +70,7 @@ namespace WorldSphereMod.NewCamera
                 return;
             }
             MainCamera.transform.position = Core.Sphere.SpherePos(Position.x, Position.y, Height/2);
+
             Bench.bench("Draw Sphere", "game_total"); //im not even sure if the lag is actually tracked
             Core.Sphere.DrawTiles((int)Position.x);
             Bench.benchEnd("Draw Sphere", "game_total");
@@ -143,11 +145,7 @@ namespace WorldSphereMod.NewCamera
     [HarmonyPatch(typeof(MoveCamera), nameof(MoveCamera.updateMouseCameraDrag))]
     public class RotateCamera
     {
-        public static float InvertMult
-        {
-            get { return Rotation.x < 90 || Rotation.x > 270 ? 2 : -2; }
-        }
-        public static Vector2 Rotation = Vector2.zero;
+        public static Vector3 Rotation = new Vector3(0, 90);
         static bool Prefix()
         {
             if (Core.IsWorld3D)
@@ -156,6 +154,10 @@ namespace WorldSphereMod.NewCamera
                 return false;
             }
             return true;
+        }
+        public static float InvertMult
+        {
+            get { return Rotation.x < 90 || Rotation.x > 270 ? 2 : -2; }
         }
         static void UpdateRotation(Vector2 Change)
         {
@@ -248,7 +250,7 @@ namespace WorldSphereMod.NewCamera
         static void ToBounds3D()
         {
             Vector3 pos = default;
-            pos.x = Core.Sphere.InBounds(Manager.transform.position.x);
+            pos.x = Mathf.Clamp(Tools.MathStuff.Wrap(Manager.transform.position.x, 0, Core.Sphere.Width), 0, Core.Sphere.Width);
             pos.y = Mathf.Clamp(Manager.transform.position.y, 0, MapBox.height-0.5f);
             pos.z = -0.5f;
             Manager.transform.position = pos;

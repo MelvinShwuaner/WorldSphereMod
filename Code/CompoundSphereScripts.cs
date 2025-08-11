@@ -22,9 +22,25 @@ namespace WorldSphereMod
         {
             return Quaternion.AngleAxis(Tools.MathStuff.Angle(SphereTile.Position.y, SphereTile.Position.x), Vector3.forward) * ConstRot;
         }
+        public static Quaternion FlatRotation(SphereTile SphereTile)
+        {
+            return ConstRot* ToUpright;
+        }
         public static Color32 SphereTileColor(SphereTile SphereTile)
         {
             return Core.Sphere.GetColor(SphereTile.Index());
+        }
+        public static Vector3 CartesianToFlat(SphereManager manager, float X, float Y, float Height = 0)
+        {
+            return new Vector3(-X, Height, Y+ZDisplacement);
+        }
+        public static Vector3 FlatToCartesian(SphereManager manager, float x, float y, float z)
+        {
+            return new Vector3(-x, z-ZDisplacement, y);
+        }
+        public static Vector2 FlatToCartesianFast(SphereManager manager, float x, float y, float z)
+        {
+            return new Vector2(-x, z-ZDisplacement);
         }
         public static Vector3 CartesianToCylindrical(SphereManager manager, float X, float Y, float Height = 0)
         {
@@ -46,7 +62,7 @@ namespace WorldSphereMod
             float Y = z-ZDisplacement;
             return new Vector2Int((int)X, (int)Y);
         }
-        public static void Initiation(SphereManager Manager)
+        public static void CylindricalInitiation(SphereManager Manager)
         {
             GameObject Cylinder = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             Cylinder.transform.SetPositionAndRotation(new Vector3(0, 0, (Manager.Cols / 2)+ZDisplacement), Quaternion.Euler(-90, 0, 0));
@@ -56,11 +72,20 @@ namespace WorldSphereMod
             Cylinder.AddComponent<MeshCollider>();
             Cylinder.transform.parent = Manager.transform;
         }
+        public static void FlatInitiation(SphereManager Manager)
+        {
+            GameObject Quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            Quad.transform.SetPositionAndRotation(new Vector3(-(Manager.Rows / 2) + 0.5f, 0, (Manager.Cols / 2) - 0.5f+ZDisplacement), Quaternion.Euler(90, 0, 0));
+            Quad.transform.localScale = new Vector3(Manager.Rows, Manager.Cols, 1);
+            Object.Destroy(Quad.GetComponent<MeshRenderer>());
+            Quad.GetComponent<MeshCollider>().convex = true; //why the fuck?
+            Quad.transform.parent = Manager.transform;
+        }
         public static DisplayMode getdisplaymode(SphereManager _)
         {
             return World.world.quality_changer.isLowRes() ? DisplayMode.ColorOnly : DisplayMode.TextureOnly;
         }
-        static float RangeMult => 2;
+        static float RangeMult => Core.savedSettings.RenderRange;
         static float BaseRange => 3 + (1-(1/RangeMult));
         public static void RenderRange(SphereManager SphereManager, out int Min, out int Max) 
         {
@@ -68,6 +93,13 @@ namespace WorldSphereMod
            float Rows = SphereManager.Rows;
            Min = (int)-(Rows / Devide);
            Max = (int)(Rows / Devide); 
+        }
+        public static void RenderRangeFlat(SphereManager SphereManager, out int Min, out int Max)
+        {
+            float Devide = (BaseRange + (CameraManager.Manager.orthographicSizeMax / CameraManager.Height / (RangeMult*2)))/2;
+            float Rows = SphereManager.Rows;
+            Min = Mathf.Max((int)-(Rows / Devide), -(int)CameraManager.Position.x);
+            Max = Mathf.Min((int)(Rows / Devide), Core.Sphere.Width - (int)CameraManager.Position.x);
         }
     }
 }

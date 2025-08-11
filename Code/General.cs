@@ -218,21 +218,26 @@ namespace WorldSphereMod.General
             }
         }
     }
-    [HarmonyPatch(typeof(Drop), nameof(Drop.updatePosition))]
     public class Drop3D {
-        static bool Prefix(Drop __instance)
+        [HarmonyPatch(typeof(Drop), nameof(Drop.updatePosition))]
+        [HarmonyPrefix]
+        static bool UpdatePos(Drop __instance)
         {
             if (Core.IsWorld3D)
             {
-                UpdatePosition3D(__instance);
+                __instance.transform.position = Tools.To3D(__instance.current_position, __instance._currentHeightZ);
                 return false;
             }
             return true;
         }
-        static void UpdatePosition3D(Drop Drop)
+        [HarmonyPatch(typeof(Drop), nameof(Drop.updateRotation))]
+        [HarmonyPostfix]
+        static void UpdateRot(Drop __instance)
         {
-            Drop.transform.position = Tools.To3D(Drop.current_position, Drop._currentHeightZ);
-            Drop.transform.rotation = Tools.RotateToCameraAtTile(Drop.transform.position);
+            if (Core.IsWorld3D)
+            {
+                __instance.transform.rotation *= Tools.RotateToCameraAtTile(__instance.current_position.AsIntClamped());
+            }
         }
     }
     [HarmonyPatch(typeof(ParticleSystem), nameof(ParticleSystem.Emit), new Type[] {typeof(ParticleSystem.EmitParams), typeof(int) })]
@@ -289,6 +294,27 @@ namespace WorldSphereMod.General
                 {
                     transform.localPosition = new Vector3(transform.localPosition.x, transform.localPosition.y, 0);
                 }
+            }
+        }
+    }
+    public static class DisableSettingPositions
+    {
+        static MethodInfo setpos = AccessTools.Method(typeof(Transform), "set_position");
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            CodeMatcher Matcher = new CodeMatcher(instructions);
+            while (Matcher.FindNext(new CodeMatch(OpCodes.Callvirt, setpos)))
+            {
+                Matcher.RemoveInstruction();
+                Matcher.Insert(new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(DisableSettingPositions), nameof(SetPositionIf2D))));
+            }
+            return Matcher.Instructions();
+        }
+        public static void SetPositionIf2D(this Transform transform, Vector3 Pos)
+        {
+            if (!Core.IsWorld3D)
+            {
+                transform.position = Pos;
             }
         }
     }

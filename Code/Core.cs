@@ -24,7 +24,7 @@ namespace WorldSphereMod
     public static class Core
     {
         public static SavedSettings savedSettings = new SavedSettings();
-        public static string SettingsVersion = "1.0.0";
+        public static string SettingsVersion = "1.0.2";
 
         public static Harmony Patcher;
         public static void SaveSettings()
@@ -91,6 +91,7 @@ namespace WorldSphereMod
             Patcher.PatchAll(typeof(Dist3D));
             Patcher.PatchAll(typeof(EffectPatches));
             Patcher.PatchAll(typeof(MovementEnhancement));
+            Patcher.PatchAll(typeof(Drop3D));
             Patcher.PatchAll(typeof(AddLayers));
             Patcher.PatchAll(typeof(QuantumSpritePatches));
             Patcher.PatchAll(typeof(WorldLoop));
@@ -152,10 +153,13 @@ namespace WorldSphereMod
             Patcher.Transpile(Method(typeof(CombatActionLibrary), nameof(CombatActionLibrary.getAttackTargetPosition)), Move3D.Transpiler);
             Patcher.Transpile(Method(typeof(MusicBoxContainerTiles), nameof(MusicBoxContainerTiles.calculatePan)), Move3D.Transpiler);
 
+            Patcher.Transpile(Method(typeof(HeatRayEffect), nameof(HeatRayEffect.update)), DisableSettingPositions.Transpiler);
+
             //this is where the fun begins 
             DimensionConverter.ConvertPositions(Method(typeof(Boulder), nameof(Boulder.updateCurrentPosition)), 1);
             DimensionConverter.ConvertPositions(Method(typeof(Boulder), nameof(Boulder.actionLanded)));
             DimensionConverter.ConvertQuantum(Method(typeof(Santa), nameof(Santa.updatePosition)), DimensionConverter.YToZ);
+            DimensionConverter.ConvertQuantum(Method(typeof(HeatRayEffect), nameof(HeatRayEffect.play)), DimensionConverter.ToQuantum);
 
             DimensionConverter.ConvertQuantum(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawShadowsBuildings)), DimensionConverter.ToQuantumNonUpright);
             DimensionConverter.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawArrowQuantumSprite)));
@@ -185,16 +189,25 @@ namespace WorldSphereMod
         {
             Sphere.Begin();
             CameraManager.MakeCamera3D();
+            Do3DStuff();
+        }
+        static void Do3DStuff()
+        {
+            World.world.heat_ray_fx.ray.transform.localPosition = Vector3.zero;
+            World.world.heat_ray_fx.ray.transform.eulerAngles = new Vector3(180, 0, 0);
         }
         public static void Become2D()
         {
             Sphere.Finish();
             CameraManager.MakeCamera2D();
+            do2DStuff();
         }
-        public static void GetCamerRange(out int Min, out int Max)
+        static void do2DStuff()
         {
-            RenderRange(Sphere.Manager, out Min, out Max);
+            World.world.heat_ray_fx.ray.transform.localPosition = new Vector3(0, 2000);
+            World.world.heat_ray_fx.ray.transform.eulerAngles = Vector3.zero;
         }
+        
         public static PixelFlashEffects FlashLayer => World.world.flash_effects;
         public static bool Generated = false;
         public static bool GeneratingSphere => savedSettings.Is3D && !Generated;
@@ -202,13 +215,34 @@ namespace WorldSphereMod
         // the layer between the Mod and the compound sphere
         public static class Sphere
         {
+            struct Shape
+            {
+                public Shape(To2D to2d, To2DFast to2dfast, GetSphereTilePosition to3d, GetSphereTileRotation rot, Initiation init, GetCameraRange GetCameraRange, bool IsWrapped)
+                {
+                    this.To2D = to2d;
+                    this.To2DFast = to2dfast;
+                    this.To3D = to3d;
+                    this.tileRotation = rot;
+                    this.Inititation = init;
+                    this.GetCameraRange = GetCameraRange;
+                    this.IsWrapped = IsWrapped;
+                }
+                public bool IsWrapped;
+                public To2D To2D;
+                public To2DFast To2DFast;
+                public GetSphereTilePosition To3D;
+                public GetSphereTileRotation tileRotation;
+                public Initiation Inititation;
+                public GetCameraRange GetCameraRange;
+            }
+            public static bool IsWrapped => CurrentShape.IsWrapped;
             public static float Radius => Manager.Radius;
             public static int Width => Manager.Rows;
             public static int Height => Manager.Cols;
             public static Transform CenterCapsule => Manager.transform.GetChild(0);
             public static bool Exists => Manager != null;
             #region Fancy stuff
-            internal static SphereManager Manager;
+            static SphereManager Manager;
             static Mesh CompoundSphereMesh;
             static Material CompoundSphereMaterial;
             static Texture2DArray Textures;
@@ -217,8 +251,21 @@ namespace WorldSphereMod
             #endregion
             public static List<MapLayer> BaseLayers;
             public static Dictionary<MapLayer, PixelArray> CachedColors;
+            public delegate Vector3 To2D(SphereManager manager, float x, float y, float z);
+            public delegate Vector2 To2DFast(SphereManager manager, float x, float y, float z);
+            static Shape CurrentShape;
+            public static void GetCamerRange(out int Min, out int Max)
+            {
+                CurrentShape.GetCameraRange(Sphere.Manager, out Min, out Max);
+            }
+            static List<Shape> Shapes = new List<Shape>()
+            {
+                new Shape(CylindricalToCartesian, CylindricalToCartesianFast, CartesianToCylindrical, CylindricalRotation, CylindricalInitiation, RenderRange, true), //cylinder
+                new Shape(FlatToCartesian, FlatToCartesianFast, CartesianToFlat, FlatRotation, FlatInitiation, RenderRangeFlat, false)//flat
+            };
             public static void Begin()
             {
+                CreateSettings();
                 int width = MapBox.width;
                 int height = MapBox.height;
                 Manager = SphereManager.Creator.CreateSphereManager(width, height, SphereManagerConfig);
@@ -251,10 +298,6 @@ namespace WorldSphereMod
             {
                 return FlashLayer.pixels[Index].Normalised();
             }
-            public static float InBounds(float X, float change = 0)
-            {
-                return Manager.Clamp(X, change);
-            }
             public static void UpdateScale(SphereTile Tile)
             {
                 Manager.UpdateScale(Tile.X, Tile.Y);
@@ -280,7 +323,8 @@ namespace WorldSphereMod
             }
             public static void Finish()
             {
-                if(Manager == null || Manager.gameObject == null)
+                CurrentShape = Shapes[savedSettings.CurrentShape];
+                if (Manager == null || Manager.gameObject == null)
                 {
                     return;
                 }
@@ -288,11 +332,11 @@ namespace WorldSphereMod
             }
             public static Vector3 TilePosWithHeight(float X, float Y, float Z)
             {
-                return CylindricalToCartesian(Manager, X, Y, Z);
+                return CurrentShape.To2D(Manager, X, Y, Z);
             }
             public static Vector2 TilePos(float X, float Y, float Z)
             {
-                return CylindricalToCartesianFast(Manager, X, Y, Z);
+                return CurrentShape.To2DFast(Manager, X, Y, Z);
             }
             public static void DrawTiles(int CameraX)
             {
@@ -308,13 +352,13 @@ namespace WorldSphereMod
             }
             public static Vector3 SpherePos(float X, float Y, float Height = 0)
             {
-                return CartesianToCylindrical(Manager, X, Y, Height);
+                return Manager.SphereTilePosition(X, Y, Height);
             }
             public static void Prepare()
             {
+                CurrentShape = Shapes[savedSettings.CurrentShape];
                 LoadAssets();
                 CreateTextures();
-                CreateSettings();
                 BaseLayers = new List<MapLayer>(World.world._map_layers);
                 BaseLayers.Remove(FlashLayer);
                 CreateCachedColors();
@@ -345,9 +389,9 @@ namespace WorldSphereMod
             static void CreateSettings()
             {
                 SphereManagerConfig = new SphereManagerSettings(
-                    Initiation,
-                    CartesianToCylindrical,
-                    CylindricalRotation,
+                    CurrentShape.Inititation,
+                    CurrentShape.To3D,
+                    CurrentShape.tileRotation,
                     SphereTileScale,
                     SphereTileColor,
                     SphereTileTexture,
@@ -355,7 +399,7 @@ namespace WorldSphereMod
                     Textures,
                     CompoundSphereMesh,
                     CompoundSphereMaterial,
-                    RenderRange,
+                    CurrentShape.GetCameraRange,
                     new List<IBufferData>() { new CustomBufferData<Vector3>("AddedColors", 12, SphereTileAddedColor) }
                );
             }

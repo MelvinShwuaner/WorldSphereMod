@@ -27,6 +27,11 @@ namespace WorldSphereMod.QuantumSprites
                 }
             }
         }
+        public static void ForceRotation(this GroupSpriteObject obj, ref Vector3 Rot)
+        {
+            obj.transform.eulerAngles = Rot;
+            obj._last_angles_v3 = Rot;
+        }
         public static void set(this GroupSpriteObject Object, ref Vector3 pPosition, float pScale, QuantumSpriteAsset pAsset)
         {
             if (Object._last_pos_v3.x != pPosition.x || Object._last_pos_v3.y != pPosition.y || Object._last_pos_v3.z != pPosition.z)
@@ -35,7 +40,7 @@ namespace WorldSphereMod.QuantumSprites
                 Object._last_pos_v3 = pPosition;
                 if (!pAsset.IsQuantumSpriteSpecial())
                 {
-                    Object.m_transform.ToQuantumNonUpright(Object._last_pos_v3);
+                    Object.m_transform.ToSpecialNonUprightWithHeight(Object._last_pos_v3);
                 }
                 else
                 {
@@ -150,7 +155,7 @@ namespace WorldSphereMod.QuantumSprites
                 {
                     foreach(QuantumSprite sprite in group_system._sprites.Where((QuantumSprite sprite) => sprite != null))
                     {
-                        sprite.setRotation(ref Constants.Zero);
+                        sprite.ForceRotation(ref Constants.Zero);
                     }
                 }
             }
