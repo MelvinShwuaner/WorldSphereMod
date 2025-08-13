@@ -258,6 +258,53 @@ namespace WorldSphereMod.QuantumSprites
                 return tQSprite;
             }
         }
+        [HarmonyPatch(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawSquareSelection))]
+        [HarmonyPrefix]
+        static bool DrawSquare(QuantumSpriteAsset pAsset)
+        {
+            void drawSquareSelection(QuantumSpriteAsset pAsset)
+            {
+                if (!World.world.player_control.square_selection_started)
+                {
+                    return;
+                }
+                float tCameraScaleZoomMultiplier = QuantumSpriteLibrary.getCameraScaleZoomMultiplier(pAsset);
+                Color tColorSelection = World.world.getArchitectColor();
+                Vector2 tStart = World.world.player_control.square_selection_position_current;
+                Vector2 tEnd = World.world.getMousePos();
+                float tWidth = tEnd.x - tStart.x;
+                float tHeight = tEnd.y - tStart.y;
+                float tLineSize = 0.1f * tCameraScaleZoomMultiplier;
+                Color tColorMain = tColorSelection;
+                tColorMain.a = 0.3f;
+                QuantumSprite quantumSprite = QuantumSpriteLibrary.drawQuantumSprite(pAsset, tStart, null, null, null, null, 1f, false, -1f);
+                quantumSprite.setSprite(QuantumSpriteLibrary._sprite_pixel);
+                quantumSprite.transform.localScale = new Vector3(tHeight, -tWidth);
+                quantumSprite.setColor(ref tColorMain);
+                QuantumSprite quantumSprite2 = QuantumSpriteLibrary.drawQuantumSprite(pAsset, tStart, null, null, null, null, 1f, false, -1f);
+                quantumSprite2.setSprite(QuantumSpriteLibrary._sprite_pixel);
+                quantumSprite2.transform.localScale = new Vector3(tHeight, tLineSize);
+                quantumSprite2.setColor(ref tColorSelection);
+                QuantumSprite quantumSprite3 = QuantumSpriteLibrary.drawQuantumSprite(pAsset, tStart, null, null, null, null, 1f, false, -1f);
+                quantumSprite3.setSprite(QuantumSpriteLibrary._sprite_pixel);
+                quantumSprite3.transform.localScale = new Vector3(tLineSize, -tWidth);
+                quantumSprite3.setColor(ref tColorSelection);
+                QuantumSprite quantumSprite4 = QuantumSpriteLibrary.drawQuantumSprite(pAsset, tEnd, null, null, null, null, 1f, false, -1f);
+                quantumSprite4.setSprite(QuantumSpriteLibrary._sprite_pixel);
+                quantumSprite4.transform.localScale = new Vector3(-tHeight, tLineSize);
+                quantumSprite4.setColor(ref tColorSelection);
+                QuantumSprite quantumSprite5 = QuantumSpriteLibrary.drawQuantumSprite(pAsset, tEnd, null, null, null, null, 1f, false, -1f);
+                quantumSprite5.setSprite(QuantumSpriteLibrary._sprite_pixel);
+                quantumSprite5.transform.localScale = new Vector3(tLineSize, tWidth);
+                quantumSprite5.setColor(ref tColorSelection);
+            }
+            if (Core.IsWorld3D)
+            {
+                drawSquareSelection(pAsset);
+                return false;
+            }
+            return true;
+        }
     }
     [HarmonyPatch(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawQuantumSprite), new Type[] { typeof(QuantumSpriteAsset), typeof(Vector3), typeof(WorldTile), typeof(Kingdom), typeof(City), typeof(BattleContainer), typeof(float), typeof(bool), typeof(float) })]
     public class MainQuantumSpritePatch
@@ -268,7 +315,7 @@ namespace WorldSphereMod.QuantumSprites
             {
                 return;
             }
-            if (pAsset.id == "highlight_cursor_zones")
+            if (pAsset.id == "highlight_cursor_zones" || pAsset.id == "square_selection")
             {
                 pPos.z = 10;
             }
