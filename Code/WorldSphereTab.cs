@@ -51,7 +51,7 @@ namespace WorldSphereMod.UI
 
         static void CreateTab()
         {
-            ModIcon = Resources.Load<Sprite>("WorldSphereMod/icon");
+            ModIcon = Resources.Load<Sprite>("WorldSphereMod/ModIcon");
             Tab = TabManager.CreateTab("WorldSphereMod", "WorldSphereMod", "A Mod that makes your game 3D!", ModIcon, "Created by Lord Melvin");
         }
         public static Text addText(string window, string textString, GameObject parent, int sizeFont, Vector3 pos, Vector2 addSize = default(Vector2))
@@ -116,7 +116,7 @@ namespace WorldSphereMod.UI
         }
         static void CreateButtons()
         {
-            CreateToggleButton("Is3D", "WorldSphereMod/icon", "Is 3D", "This is ONLY applied once you reload the world", Toggle3D, Core.savedSettings.Is3D);
+            CreateToggleButton("Is3D", "WorldSphereMod/ModIcon", "Is 3D", "This is ONLY applied once you reload the world", Toggle3D, Core.savedSettings.Is3D);
             // CreateToggleButton("InvertedWorld", "WorldSphereMod/icon", "Inverted World", "fuck my life", ToggleWorld, Core.savedSettings.InvertedWorld);
             CreateWindowButton("Sprite Settings", "WorldSphereMod/icon", "Sprite Settings", "settings about the sprites in the game", "WARNING! THESE ARE EXPENSIVE", new List<ButtonData>()
             {
@@ -131,8 +131,8 @@ namespace WorldSphereMod.UI
             GenerateSlider("Render Distance", 1, 20, Core.savedSettings.RenderRange, (float val) => { Core.savedSettings.RenderRange = val; Core.SaveSettings(); }, "Camera Settings");
             CreateWindowButton("World Shape", "WorldSphereMod/icon", "World Shape", "The Shape Of The World", "this will only apply when you regenerate the world!", new List<ButtonData>()
             {
-                new ButtonData("CylindricalShape", "Makes the World a Cylinder", "WorldSphereMod/icon", Core.savedSettings.CurrentShape == 0, SetShape, false),
-                new ButtonData("FlatShape", "Makes the World Flat", "WorldSphereMod/icon", Core.savedSettings.CurrentShape == 1, SetShape, false)
+                new ButtonData("CylindricalShape", "Makes the World a Cylinder", "WorldSphereMod/Round", Core.savedSettings.CurrentShape == 0, SetShape, false),
+                new ButtonData("FlatShape", "Makes the World Flat", "WorldSphereMod/Flat", Core.savedSettings.CurrentShape == 1, SetShape, false)
             });
         }
         static Dictionary<string, int> WorldShapes = new Dictionary<string, int>()

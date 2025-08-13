@@ -38,9 +38,9 @@ namespace WorldSphereMod.QuantumSprites
             {
                 Object._last_pos_v2 = pPosition;
                 Object._last_pos_v3 = pPosition;
-                if (!pAsset.IsQuantumSpriteSpecial())
+                if (!pAsset.IsQuantumUpright())
                 {
-                    Object.m_transform.ToSpecialNonUprightWithHeight(Object._last_pos_v3);
+                    Object.m_transform.ToSpecialNonUpright(Object._last_pos_v3);
                 }
                 else
                 {
@@ -92,6 +92,7 @@ namespace WorldSphereMod.QuantumSprites
                         Vector3 tPosTopic = tQBubble.m_transform.TransformPoint(0, 10f, 0.1f);
                         QuantumSprite next = pAsset.group_system.getNext();
                         next.set(ref tPosTopic, tScale.y * 0.35f);
+                        next.transform.rotation = tQBubble.m_transform.rotation;
                         Sprite tTopicSprite = tActor.getSocializeTopic();
                         next.setSprite(tTopicSprite);
                     }
@@ -111,7 +112,7 @@ namespace WorldSphereMod.QuantumSprites
                 Object.setScale(pScale);
             }
         }
-        public static bool IsQuantumSpriteSpecial(this QuantumSpriteAsset pAsset)
+        public static bool IsQuantumUpright(this QuantumSpriteAsset pAsset)
         {
             return pAsset.id == "selected_units" || pAsset.id == "draw_building_stockpiles";
         }
@@ -166,7 +167,6 @@ namespace WorldSphereMod.QuantumSprites
         {
             QuantumSprite next = QuantumSpriteLibrary.light_areas.group_system.getNext();
             next.setnotupright(ref pPos, pScale);
-            Debug.Log(QuantumSpriteLibrary.light_areas.color);
             return false;
         }
         [HarmonyPatch(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawSocialize))]
@@ -192,6 +192,72 @@ namespace WorldSphereMod.QuantumSprites
             }
             return false;
         }
+        [HarmonyPatch(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawArrowQuantumSprite))]
+        [HarmonyPrefix]
+        public static bool arrows(QuantumSpriteAsset pAsset, Vector3 pStart, Vector3 pEnd, ref Color pColor, City pCity, ref QuantumSpriteArrows __result)
+        {
+            if (!Core.IsWorld3D)
+            {
+                return true;
+            }
+            __result = patch(pAsset, pStart, pEnd, ref pColor, pCity);
+            return false;
+            static QuantumSpriteArrows patch(QuantumSpriteAsset pAsset, Vector3 pStart, Vector3 pEnd, ref Color pColor, City pCity)
+            {
+                if (pStart.x == pEnd.x && pStart.y == pEnd.y)
+                {
+                    return null;
+                }
+                float tDist = Toolbox.Dist(pStart.x, pStart.y, pEnd.x, pEnd.y);
+                float tScale = pAsset.base_scale * QuantumSpriteLibrary.getCameraScaleZoomMultiplier(pAsset);
+                if (pCity != null)
+                {
+                    tScale *= pCity.mark_scale_effect;
+                }
+                tDist /= tScale;
+                if (tDist < (float)pAsset.line_width)
+                {
+                    return null;
+                }
+                float tAnimatedPos = QuantumSpriteManager.arrow_middle_current;
+                if (!pAsset.arrow_animation)
+                {
+                    tAnimatedPos = 0f;
+                }
+                QuantumSpriteArrows tQSprite = (QuantumSpriteArrows)pAsset.group_system.getNext();
+                tQSprite.spriteArrowEnd.enabled = pAsset.render_arrow_end;
+                tQSprite.spriteArrowStart.enabled = pAsset.render_arrow_start;
+                if (tDist < (float)(pAsset.line_width + 2))
+                {
+                    tQSprite.spriteArrowEnd.enabled = false;
+                }
+                if (tQSprite.spriteArrowEnd.enabled)
+                {
+                    tQSprite.spriteArrowEnd.color = pColor;
+                    tQSprite.spriteArrowEnd.transform.localPosition = new Vector3(tDist, 0f, 0f);
+                }
+                if (tQSprite.spriteArrowStart.enabled)
+                {
+                    tQSprite.spriteArrowStart.color = pColor;
+                }
+                tQSprite.spriteArrowMiddle.color = pColor;
+                Vector3 tPos = pStart;
+                tPos.z = (float)pAsset.group_system.countActive() * 0.001f;
+                tQSprite.transform.ToSpecialNonUprightWithHeight(tPos);
+                Vector2 direct = Tools.Direction3D(pStart, pEnd);
+                float tAngle = Tools.MathStuff.Angle(direct.y, direct.x) + 90;
+                tQSprite.transform.rotation *= Quaternion.Euler(new Vector3(0, 0f, tAngle));
+                float tSizeMiddle = tDist - tAnimatedPos;
+                if (tQSprite.spriteArrowEnd.enabled)
+                {
+                    tSizeMiddle -= 5f;
+                }
+                tQSprite.spriteArrowMiddle.size = new Vector2(tSizeMiddle, (float)pAsset.line_height);
+                tQSprite.spriteArrowMiddle.transform.localPosition = new Vector3(tAnimatedPos, 0f, 0f);
+                tQSprite.transform.localScale = new Vector3(tScale, tScale, 1f);
+                return tQSprite;
+            }
+        }
     }
     [HarmonyPatch(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawQuantumSprite), new Type[] { typeof(QuantumSpriteAsset), typeof(Vector3), typeof(WorldTile), typeof(Kingdom), typeof(City), typeof(BattleContainer), typeof(float), typeof(bool), typeof(float) })]
     public class MainQuantumSpritePatch
@@ -208,7 +274,7 @@ namespace WorldSphereMod.QuantumSprites
             }
             else
             {
-                pPos.z += Constants.SpecialHeight + Tools.GetTileHeightSmooth(pPos);
+                pPos.z += 1 + Tools.GetTileHeightSmooth(pPos);
             }
         }
         static void Postfix(QuantumSpriteAsset pAsset, ref QuantumSprite __result)

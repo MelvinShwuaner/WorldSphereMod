@@ -29,7 +29,7 @@ namespace WorldSphereMod
             {"fx_tile_effect", new EffectData(false) },
             {"fx_cloud", new EffectData(false, true, 21, false) }
         };
-        public const int SpecialHeight = 1;
+        public const int SpecialHeight = 4;
         public static Vector3 HighlightedZoneSize = new Vector3(1, 1 + (10 * YConst), 1);
         public static Vector3 Zero = Vector3.zero;
     }

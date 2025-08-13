@@ -89,7 +89,7 @@ namespace WorldSphereMod
         }
         public static void ToQuantumWithHeight(this Transform transform, Vector3 v)
         {
-            if (!Core.IsWorld3D)
+            if (!Core.IsWorld3D || v.Is3D()) 
             {
                 transform.position = v;
                 return;
@@ -121,6 +121,16 @@ namespace WorldSphereMod
             transform.rotation = Tools.GetRotation(v.AsInt());
         }
         //osama bin laden once said "this type of shit, is why i bomb people"
+        public static void ToSpecialNonUpright(this Transform transform, Vector3 v)
+        {
+            if (!Core.IsWorld3D)
+            {
+                transform.position = v;
+                return;
+            }
+            transform.position = v.To3D();
+            transform.rotation = Tools.GetRotation(v.AsIntClamped());
+        }
         public static void ToSpecialNonUprightWithHeight(this Transform transform, Vector3 v)
         {
             if (!Core.IsWorld3D)

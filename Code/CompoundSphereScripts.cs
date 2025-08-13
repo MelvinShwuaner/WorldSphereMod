@@ -86,7 +86,7 @@ namespace WorldSphereMod
             return World.world.quality_changer.isLowRes() ? DisplayMode.ColorOnly : DisplayMode.TextureOnly;
         }
         static float RangeMult => Core.savedSettings.RenderRange;
-        static float BaseRange => 3 + (1-(1/RangeMult));
+        static float BaseRange => 4 - (1/RangeMult);
         public static void RenderRange(SphereManager SphereManager, out int Min, out int Max) 
         {
            float Devide = BaseRange + (CameraManager.Manager.orthographicSizeMax / CameraManager.Height / RangeMult);
@@ -96,7 +96,8 @@ namespace WorldSphereMod
         }
         public static void RenderRangeFlat(SphereManager SphereManager, out int Min, out int Max)
         {
-            float Devide = (BaseRange + (CameraManager.Manager.orthographicSizeMax / CameraManager.Height / (RangeMult*2)))/2;
+            float Devide = (BaseRange + (CameraManager.Manager.orthographicSizeMax / CameraManager.Height / RangeMult))/4;
+            
             float Rows = SphereManager.Rows;
             Min = Mathf.Max((int)-(Rows / Devide), -(int)CameraManager.Position.x);
             Max = Mathf.Min((int)(Rows / Devide), Core.Sphere.Width - (int)CameraManager.Position.x);

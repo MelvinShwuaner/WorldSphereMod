@@ -318,4 +318,25 @@ namespace WorldSphereMod.General
             }
         }
     }
+    [HarmonyPatch(typeof(BatchActors), nameof(BatchActors.updateVisibility))]
+    public static class DontShowPossessedUnit
+    {
+        static MethodInfo setpos = AccessTools.Method(typeof(Actor), nameof(Actor.isInsideSomething));
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            CodeMatcher Matcher = new CodeMatcher(instructions);
+            Matcher.MatchForward(false, new CodeMatch(OpCodes.Callvirt, setpos));
+            Matcher.RemoveInstruction();
+            Matcher.Insert(new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(DontShowPossessedUnit), nameof(IsVisible))));
+            return Matcher.Instructions();
+        }
+        public static bool IsVisible(this Actor actor)
+        {
+            bool IsMainUnit(Actor actor)
+            {
+                return Core.IsWorld3D && ControllableUnit._unit_main == actor;
+            }
+            return actor.isInsideSomething() || IsMainUnit(actor);
+        }
+    }
 }

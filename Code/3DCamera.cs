@@ -1,5 +1,6 @@
-﻿using CompoundSpheres;
-using HarmonyLib;
+﻿using HarmonyLib;
+using System.Collections.Generic;
+using System.Reflection.Emit;
 using UnityEngine;
 using static WorldSphereMod.NewCamera.CameraManager;
 namespace WorldSphereMod.NewCamera
@@ -69,12 +70,17 @@ namespace WorldSphereMod.NewCamera
             {
                 return;
             }
-            MainCamera.transform.position = Core.Sphere.SpherePos(Position.x, Position.y, Height/2);
-
+            MainCamera.transform.position = Core.Sphere.SpherePos(Position.x, Position.y, Height);
+            float MinZoom = CameraTile.TileHeight()+1;
+            if (ControllableUnit._unit_main != null || Manager._target_zoom < MinZoom)
+            {
+                Manager._target_zoom = MinZoom;
+            }
             Bench.bench("Draw Sphere", "game_total"); //im not even sure if the lag is actually tracked
             Core.Sphere.DrawTiles((int)Position.x);
             Bench.benchEnd("Draw Sphere", "game_total");
         }
+        public static WorldTile CameraTile => World.world.GetTile((int)Position.x, (int)Position.y);
     }
     public class MovementEnhancement
     {
@@ -157,7 +163,7 @@ namespace WorldSphereMod.NewCamera
         }
         public static float InvertMult
         {
-            get { return Rotation.x < 90 || Rotation.x > 270 ? 2 : -2; }
+            get { return Rotation.x < 90 || Rotation.x > 270 ? 1 : -1; }
         }
         static void UpdateRotation(Vector2 Change)
         {
@@ -271,7 +277,7 @@ namespace WorldSphereMod.NewCamera
     {
         static float AsMaxHeight(float Num)
         {
-            return Num;
+            return Num/2;
         }
         static void ResetZoom()
         {
@@ -299,9 +305,9 @@ namespace WorldSphereMod.NewCamera
                 tInitialZoom = (int)Manager.orthographicSizeMax;
             }
             Manager._target_zoom = tInitialZoom;
-            Manager.mainCamera.orthographicSize = Mathf.Clamp(Manager._target_zoom, 10f, Manager.orthographicSizeMax);
+            Manager.mainCamera.orthographicSize = Mathf.Clamp(Manager._target_zoom, 2f, Manager.orthographicSizeMax);
             World.world.setZoomOrthographic(Manager.mainCamera.orthographicSize);
-            Manager.mainCamera.farClipPlane = 10000;
+            Manager.mainCamera.farClipPlane = 20000;
         }
         static bool Prefix()
         {
@@ -311,6 +317,27 @@ namespace WorldSphereMod.NewCamera
                 return false;
             }
             return true;
+        }
+    }
+    static class MinZoomTranspiler
+    {
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            CodeMatcher Matcher = new CodeMatcher(instructions);
+            while (Matcher.FindNext(new CodeInstruction(OpCodes.Ldc_R4, 10f)))
+            {
+                Matcher.RemoveInstruction();
+                Matcher.Insert(new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(MinZoomTranspiler), nameof(GetMinZoom))));
+            }
+            return Matcher.Instructions();
+        }
+        public static float GetMinZoom()
+        {
+            if (Core.IsWorld3D)
+            {
+                return CameraTile.TileHeight() + 1;
+            }
+            return 10;
         }
     }
 }
