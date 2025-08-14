@@ -24,7 +24,7 @@ namespace WorldSphereMod
     public static class Core
     {
         public static SavedSettings savedSettings = new SavedSettings();
-        public static string SettingsVersion = "1.0.2";
+        public static string SettingsVersion = "1.1.0";
 
         public static Harmony Patcher;
         public static void SaveSettings()
@@ -59,6 +59,7 @@ namespace WorldSphereMod
             WorldSphereTab.Begin();
             DimensionConverter.Prepare();
             Patch();
+            FixCrabzilla.Prepare();
             CameraManager.Begin();
             DoSomeOtherStuff();
         }
@@ -96,7 +97,6 @@ namespace WorldSphereMod
             Patcher.PatchAll(typeof(QuantumSpritePatches));
             Patcher.PatchAll(typeof(WorldLoop));
             Patcher.PatchAll(typeof(SourcePatches));
-            Patcher.PatchAll(typeof(FixCrabzilla));
 
             MethodInfo WorldLoopPatch = Method(typeof(WorldLoop), nameof(WorldLoop.Tiles));
             Patcher.Patch(Method(typeof(GeneratorTool), nameof(GeneratorTool.getTile)), new HarmonyMethod(WorldLoopPatch));
@@ -165,7 +165,6 @@ namespace WorldSphereMod
             DimensionConverter.ConvertQuantum(Method(typeof(HeatRayEffect), nameof(HeatRayEffect.play)), DimensionConverter.ToQuantum);
 
             DimensionConverter.ConvertQuantum(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawShadowsBuildings)), DimensionConverter.ToQuantumNonUpright);
-            DimensionConverter.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawArrowQuantumSprite)));
             DimensionConverter.ConvertQuantum(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawFires)), DimensionConverter.ToFire);
             DimensionConverter.ConvertQuantum(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawShadowsUnit)), DimensionConverter.ToQuantumNonUpright);
             DimensionConverter.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawUnitAttackRange)));
@@ -181,7 +180,7 @@ namespace WorldSphereMod
             DimensionConverter.ConvertQuantum(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.set), new Type[] { typeof(Vector3).MakeByRefType(), typeof(float) }), DimensionConverter.ToQuantumWithHeight);
             DimensionConverter.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.set), new Type[] { typeof(Vector3).MakeByRefType(), typeof(Vector2).MakeByRefType() }));
             DimensionConverter.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.set), new Type[] { typeof(Vector3).MakeByRefType(), typeof(Vector3).MakeByRefType() }));
-
+            //wtf
             DimensionConverter.ConvertPositions(Method(typeof(CrabLeg), nameof(CrabLeg.update)));
             DimensionConverter.ConvertPositions(Method(typeof(CrabLeg), nameof(CrabLeg.moveLeg)));
             DimensionConverter.ConvertPositions(Method(typeof(CrabLegJoint), nameof(CrabLegJoint.isAngleOk)));
@@ -196,6 +195,7 @@ namespace WorldSphereMod
         }
         static void Do3DStuff()
         {
+            FixCrabzilla.Set3D();
             World.world.heat_ray_fx.ray.transform.localPosition = Vector3.zero;
             World.world.heat_ray_fx.ray.transform.eulerAngles = new Vector3(180, 0, 0);
         }
@@ -207,6 +207,7 @@ namespace WorldSphereMod
         }
         static void do2DStuff()
         {
+            FixCrabzilla.Set2D();
             World.world.heat_ray_fx.ray.transform.localPosition = new Vector3(0, 2000);
             World.world.heat_ray_fx.ray.transform.eulerAngles = Vector3.zero;
         }

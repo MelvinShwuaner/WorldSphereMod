@@ -279,21 +279,29 @@ namespace WorldSphereMod.General
             return x1 - x2;
         }
     }
-    [HarmonyPatch(typeof(Actor), nameof(Actor.addChildren))]
-    public static class FixCrabzilla { 
-       public static void Postfix(Actor __instance)
+    public static class FixCrabzilla {
+        static Dictionary<Transform, float> ZPos = new Dictionary<Transform, float>();
+        public static void Prepare()
         {
-            if (!Core.IsWorld3D)
+            GameObject CrabzillaPrefab = Resources.Load<GameObject>("actors/" + "p_crabzilla");
+
+            foreach(Transform transform in CrabzillaPrefab.transform.GetAllChildren())
             {
-                return;
+                ZPos.Add(transform, transform.localPosition.z);
             }
-            if (__instance.asset.avatar_prefab == "p_crabzilla")
+        }
+       public static void Set3D()
+        {
+            foreach(Transform transform in ZPos.Keys)
             {
-                GameObject Crabzilla = __instance.avatar;
-                foreach (Transform transform in Crabzilla.transform.GetAllChildren())
-                {
-                    transform.localPosition = new Vector3(transform.localPosition.x, transform.localPosition.y, 0);
-                }
+                transform.localPosition = (Vector2)transform.localPosition;
+            }
+        }
+        public static void Set2D()
+        {
+            foreach (Transform transform in ZPos.Keys)
+            {
+                transform.localPosition = new Vector3(transform.localPosition.x, transform.localPosition.y, ZPos[transform]);
             }
         }
     }
@@ -334,7 +342,7 @@ namespace WorldSphereMod.General
         {
             bool IsMainUnit(Actor actor)
             {
-                return Core.IsWorld3D && ControllableUnit._unit_main == actor;
+                return Core.IsWorld3D && ControllableUnit._unit_main == actor && Core.savedSettings.FirstPerson;
             }
             return actor.isInsideSomething() || IsMainUnit(actor);
         }

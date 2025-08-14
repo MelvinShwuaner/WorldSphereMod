@@ -126,7 +126,8 @@ namespace WorldSphereMod.UI
             );
             CreateWindowButton("Camera Settings", "WorldSphereMod/icon", "Camera Settings", "Settings for the 3D Camera", "", new List<ButtonData>()
             {
-                new ButtonData("Inverted Camera", "if true, the horizontal and vertical movement of the camera will be swapped", "WorldSphereMod/icon", Core.savedSettings.InvertedCameraMovement, ToggleCamera)
+                new ButtonData("Inverted Camera", "if true, the horizontal and vertical movement of the camera will be swapped", "WorldSphereMod/icon", Core.savedSettings.InvertedCameraMovement, ToggleCamera),
+                new ButtonData("First Person", "When Controlling a unit, you will be playing in First Person", "WorldSphereMod/icon", Core.savedSettings.FirstPerson, ToggleFirtPerson)
             });
             GenerateSlider("Render Distance", 1, 20, Core.savedSettings.RenderRange, (float val) => { Core.savedSettings.RenderRange = val; Core.SaveSettings(); }, "Camera Settings");
             CreateWindowButton("World Shape", "WorldSphereMod/icon", "World Shape", "The Shape Of The World", "this will only apply when you regenerate the world!", new List<ButtonData>()
@@ -167,6 +168,11 @@ namespace WorldSphereMod.UI
         static void ToggleAdvancedRotations(string _)
         {
             Core.savedSettings.RotateStuffToCameraAdvanced = !Core.savedSettings.RotateStuffToCameraAdvanced;
+            Core.SaveSettings();
+        }
+        static void ToggleFirtPerson(string _)
+        {
+            Core.savedSettings.FirstPerson = !Core.savedSettings.FirstPerson;
             Core.SaveSettings();
         }
         static void ToggleCamera(string _)

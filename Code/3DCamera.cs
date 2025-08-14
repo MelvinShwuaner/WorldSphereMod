@@ -72,7 +72,7 @@ namespace WorldSphereMod.NewCamera
             }
             MainCamera.transform.position = Core.Sphere.SpherePos(Position.x, Position.y, Height);
             float MinZoom = CameraTile.TileHeight()+1;
-            if (ControllableUnit._unit_main != null || Manager._target_zoom < MinZoom)
+            if ((ControllableUnit._unit_main != null && Core.savedSettings.FirstPerson) || Manager._target_zoom < MinZoom)
             {
                 Manager._target_zoom = MinZoom;
             }
@@ -80,11 +80,18 @@ namespace WorldSphereMod.NewCamera
             Core.Sphere.DrawTiles((int)Position.x);
             Bench.benchEnd("Draw Sphere", "game_total");
         }
-        public static WorldTile CameraTile => World.world.GetTile((int)Position.x, (int)Position.y);
+        public static WorldTile CameraTile
+        {
+            get
+            {
+                Vector2Int pos = Position.AsIntClamped();
+                return World.world.GetTile(pos.x, pos.y);
+            }
+        }
     }
     public class MovementEnhancement
     {
-        public static Vector3 GetMovementVector(float Speed, bool Vertical)
+        public static Vector2 GetMovementVector(float Speed, bool Vertical)
         {
             Vector3 vector;
             if (Core.savedSettings.InvertedCameraMovement ? !Vertical : Vertical)
@@ -105,7 +112,7 @@ namespace WorldSphereMod.NewCamera
             float tMove = MoveCamera.getMoveDistance(pAsset.id.StartsWith("fast_")) * 5 / Manager._target_zoom;
             float Change = id.Contains("up") || id.Contains("right") ? tMove : -tMove;
             bool Vertical = id.Contains("down") || id.Contains("up");
-            Manager._key_move_velocity += GetMovementVector(Change, Vertical);
+            Manager._key_move_velocity += (Vector3)GetMovementVector(Change, Vertical);
         }
         [HarmonyPatch(typeof(MoveCamera), nameof(MoveCamera.move))]
         [HarmonyPrefix]
@@ -129,14 +136,14 @@ namespace WorldSphereMod.NewCamera
         }
         public static void UpdatePossesed()
         {
-            if(ControllableUnit._movement_vector.y != 0)
+            if (!Core.IsWorld3D)
             {
-                ControllableUnit._movement_vector = GetMovementVector(ControllableUnit._movement_vector.y, true);
+                return;
             }
-            else
-            {
-                ControllableUnit._movement_vector = GetMovementVector(ControllableUnit._movement_vector.x, false);
-            }
+            Vector2 Vector = ControllableUnit._movement_vector;
+            ControllableUnit._movement_vector = Vector2.zero;
+            ControllableUnit._movement_vector += GetMovementVector(Vector.y, true);
+            ControllableUnit._movement_vector += GetMovementVector(Vector.x, false);
         }
         [HarmonyPatch(typeof(ControllableUnit), nameof(ControllableUnit.updateMovementVectorJoystick))]
         [HarmonyPostfix]
@@ -146,6 +153,22 @@ namespace WorldSphereMod.NewCamera
             {
                 UpdatePossesed();
             }
+        }
+        [HarmonyPatch(typeof(ControllableUnit), nameof(ControllableUnit.updateCamera))]
+        [HarmonyPrefix]
+        public static bool updateCamera()
+        {
+            Vector2 tPos = ControllableUnit._unit_main.current_position;
+            Vector3 tCam = World.world.camera.transform.position;
+            tCam.x = tPos.x;
+            tCam.y = tPos.y;
+            if (!Core.savedSettings.FirstPerson && Core.IsWorld3D)
+            {
+                tCam += (Vector3)GetMovementVector(-3, true);
+            }
+            float tSpeed = 1f / World.world.camera.orthographicSize;
+            World.world.camera.transform.position = Vector3.Lerp(World.world.camera.transform.position, tCam, tSpeed);
+            return false;
         }
     }
     [HarmonyPatch(typeof(MoveCamera), nameof(MoveCamera.updateMouseCameraDrag))]
