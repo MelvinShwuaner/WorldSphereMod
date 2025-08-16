@@ -24,7 +24,7 @@ namespace WorldSphereMod
     public static class Core
     {
         public static SavedSettings savedSettings = new SavedSettings();
-        public static string SettingsVersion = "1.1.0";
+        public static string SettingsVersion = "1.1.1";
 
         public static Harmony Patcher;
         public static void SaveSettings()
@@ -245,6 +245,7 @@ namespace WorldSphereMod
             public static int Height => Manager.Cols;
             public static Transform CenterCapsule => Manager.transform.GetChild(0);
             public static bool Exists => Manager != null;
+            public static float HeightMult = 0;
             #region Fancy stuff
             static SphereManager Manager;
             static Mesh CompoundSphereMesh;
@@ -269,6 +270,8 @@ namespace WorldSphereMod
             };
             public static void Begin()
             {
+                CurrentShape = Shapes[savedSettings.CurrentShape];
+                HeightMult = savedSettings.TileHeight;
                 CreateSettings();
                 int width = MapBox.width;
                 int height = MapBox.height;
@@ -327,7 +330,6 @@ namespace WorldSphereMod
             }
             public static void Finish()
             {
-                CurrentShape = Shapes[savedSettings.CurrentShape];
                 if (Manager == null || Manager.gameObject == null)
                 {
                     return;
@@ -360,7 +362,6 @@ namespace WorldSphereMod
             }
             public static void Prepare()
             {
-                CurrentShape = Shapes[savedSettings.CurrentShape];
                 LoadAssets();
                 CreateTextures();
                 BaseLayers = new List<MapLayer>(World.world._map_layers);

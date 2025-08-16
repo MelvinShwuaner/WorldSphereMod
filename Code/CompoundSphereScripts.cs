@@ -1,4 +1,5 @@
 ﻿using CompoundSpheres;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using WorldSphereMod.NewCamera;
 using static WorldSphereMod.Constants;
@@ -13,7 +14,7 @@ namespace WorldSphereMod
         public static Vector3 SphereTileScale(SphereTile Tile)
         {
             float Height = Tools.TrueHeight(Tile.SphereToWorld().GetHeight(), Tile.SphereToWorld().main_type.render_z);
-            return new Vector3(1, 1+(Height*YConst), Height*ZConst);
+            return new Vector3(1, 1+(Height*YConst), Height*Core.Sphere.HeightMult);
         }
         public static Vector3 SphereTileAddedColor(SphereTile Tile) {
             return (Vector4)Core.Sphere.GetAddedColor(Tile.Index());

@@ -84,7 +84,7 @@ namespace WorldSphereMod
                 return;
             }
             transform.position = Tools.To3D(v.x, v.y - v.z, v.z);
-            transform.rotation = Tools.GetUprightRotation(v.AsInt());
+            transform.rotation = Tools.GetUprightRotation(v.AsIntClamped());
             QuantumSprites.Manager.RotateToCamera(transform);
         }
         public static void ToQuantumWithHeight(this Transform transform, Vector3 v)
@@ -95,7 +95,7 @@ namespace WorldSphereMod
                 return;
             }
             transform.position = v.To3DTileHeight(true);
-            transform.rotation = Tools.GetUprightRotation(v.AsInt());
+            transform.rotation = Tools.GetUprightRotation(v.AsIntClamped());
             QuantumSprites.Manager.RotateToCamera(transform);
         }
         public static void ToQuantumNonUpright(this Transform transform, Vector3 v)

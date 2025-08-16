@@ -130,11 +130,12 @@ namespace WorldSphereMod.UI
                 new ButtonData("First Person", "When Controlling a unit, you will be playing in First Person", "WorldSphereMod/icon", Core.savedSettings.FirstPerson, ToggleFirtPerson)
             });
             GenerateSlider("Render Distance", 1, 20, Core.savedSettings.RenderRange, (float val) => { Core.savedSettings.RenderRange = val; Core.SaveSettings(); }, "Camera Settings");
-            CreateWindowButton("World Shape", "WorldSphereMod/icon", "World Shape", "The Shape Of The World", "this will only apply when you regenerate the world!", new List<ButtonData>()
+            CreateWindowButton("World Settings", "WorldSphereMod/icon", "World Settings", "The Settings Of The World", "these will only apply when you regenerate the world!", new List<ButtonData>()
             {
                 new ButtonData("CylindricalShape", "Makes the World a Cylinder", "WorldSphereMod/Round", Core.savedSettings.CurrentShape == 0, SetShape, false),
                 new ButtonData("FlatShape", "Makes the World Flat", "WorldSphereMod/Flat", Core.savedSettings.CurrentShape == 1, SetShape, false)
             });
+            GenerateSlider("Tile Length Multiplier", 1, 10, Core.savedSettings.TileHeight, (float x) => { Core.savedSettings.TileHeight = x; Core.SaveSettings(); }, "World Settings");
         }
         static Dictionary<string, int> WorldShapes = new Dictionary<string, int>()
         {
