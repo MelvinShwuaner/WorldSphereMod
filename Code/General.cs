@@ -347,4 +347,18 @@ namespace WorldSphereMod.General
             return actor.isInsideSomething() || IsMainUnit(actor);
         }
     }
+    [HarmonyPatch(typeof(NameplateText), nameof(NameplateText.transformPosition))]
+    class Text3D
+    {
+        static bool Prefix(NameplateText __instance, Vector3 pVec, ref Vector2 __result)
+        {
+            if (Core.IsWorld3D)
+            {
+                Vector2 tViewportPosition = World.world.move_camera.mainCamera.WorldToViewportPoint(Tools.To3DTileHeight(pVec, 10));
+                __result = new Vector2(tViewportPosition.x * __instance.manager.canvasRect.sizeDelta.x - __instance.manager.canvasRect.sizeDelta.x * 0.5f, tViewportPosition.y * __instance.manager.canvasRect.sizeDelta.y - __instance.manager.canvasRect.sizeDelta.y * 0.5f);
+                return false;
+            }
+            return true;
+        }
+    }
 }

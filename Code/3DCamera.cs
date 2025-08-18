@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection.Emit;
 using UnityEngine;
+using WorldSphereMod.General;
 using static WorldSphereMod.NewCamera.CameraManager;
 namespace WorldSphereMod.NewCamera
 {
@@ -17,6 +18,22 @@ namespace WorldSphereMod.NewCamera
                 return false;
             }
             return true;
+        }
+    }
+    [HarmonyPatch(typeof(MoveCamera), nameof(MoveCamera.updateVisibleBounds))]
+    class Bounds
+    {
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            CodeMatcher Matcher = new CodeMatcher(instructions);
+            Matcher.MatchForward(false, new CodeMatch(OpCodes.Ldfld, AccessTools.Field(typeof(MoveCamera), nameof(MoveCamera.mainCamera))));
+            Matcher.RemoveInstruction();
+            Matcher.Insert(new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Bounds), nameof(Bounds.GetCamera))));
+            return Matcher.Instructions();
+        }
+        static Camera GetCamera(MoveCamera Camera)
+        {
+            return World.world.camera;
         }
     }
     [HarmonyPatch(typeof(Camera), "set_orthographicSize")]
