@@ -1,5 +1,7 @@
 ﻿using EpPathFinding.cs;
 using HarmonyLib;
+using NCMS.Utils;
+using SleekRender;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -279,29 +281,65 @@ namespace WorldSphereMod.General
             return x1 - x2;
         }
     }
-    public static class FixCrabzilla {
-        static Dictionary<Transform, float> ZPos = new Dictionary<Transform, float>();
-        public static void Prepare()
-        {
-            GameObject CrabzillaPrefab = Resources.Load<GameObject>("actors/" + "p_crabzilla");
 
-            foreach(Transform transform in CrabzillaPrefab.transform.GetAllChildren())
-            {
-                ZPos.Add(transform, transform.localPosition.z);
-            }
-        }
-       public static void Set3D()
+    public static class FixCrabzilla {
+        static List<SpriteRenderer> OriginalSprites = new List<SpriteRenderer>();
+        static List<SpriteRenderer> Sprites = new List<SpriteRenderer>();
+        static Transform Manager;
+        [HarmonyPatch(typeof(Crabzilla), nameof(Crabzilla.create))]
+        [HarmonyPrefix]
+        public static void PrepareCrabzilla(Actor pActor)
         {
-            foreach(Transform transform in ZPos.Keys)
+            if (!Core.IsWorld3D)
             {
-                transform.localPosition = (Vector2)transform.localPosition;
+                return;
             }
-        }
-        public static void Set2D()
-        {
-            foreach (Transform transform in ZPos.Keys)
+            GameObject CrabzillaPrefab = pActor.avatar;
+            Manager = new GameObject().transform;
+            foreach (Transform transform in CrabzillaPrefab.transform.GetAllChildren())
             {
-                transform.localPosition = new Vector3(transform.localPosition.x, transform.localPosition.y, ZPos[transform]);
+                if (transform.TryGetComponent(out SpriteRenderer renderer))
+                {
+                    OriginalSprites.Add(renderer);
+                    Transform newsprite = new GameObject().transform;
+                    newsprite.parent = Manager;
+                    var newrenderer = Tools.CopyComponent(renderer, newsprite.gameObject);
+                    newrenderer.bounds = new Bounds(Vector3.zero, Vector3.one * 100000);
+                    Sprites.Add(newrenderer);
+                }
+            }
+
+        }
+        [HarmonyPatch(typeof(Actor), nameof(Actor.checkComponentListDispose))]
+        [HarmonyPostfix]
+        public static void DestroyCrabzilla(Actor __instance)
+        {
+            if(__instance.asset.avatar_prefab != "p_crabzilla")
+            {
+                return;
+            }
+            Manager.gameObject.DestroyImmediateIfNotNull();
+            OriginalSprites.Clear();
+            Sprites.Clear();
+        }
+        [HarmonyPatch(typeof(Crabzilla), nameof(Crabzilla.update))]
+        [HarmonyPostfix]
+        public static void UpdateCrabzilla(Crabzilla __instance)
+        {
+            if (!Core.IsWorld3D)
+            {
+                return;
+            }
+            Manager.transform.position = Tools.To3DTileHeight(__instance.transform.position, 10);
+            Manager.transform.rotation = Tools.RotateToCameraAtTile(__instance.transform.position.AsIntClamped());
+            Manager.localScale = __instance.transform.localScale;
+            for(int i = 0; i < OriginalSprites.Count; i++)
+            {
+                Sprites[i].sprite = OriginalSprites[i].sprite;
+                Sprites[i].gameObject.SetActive(OriginalSprites[i].gameObject.activeSelf && OriginalSprites[i].enabled);
+                Sprites[i].transform.localPosition = (Vector2)__instance.transform.InverseTransformPoint(OriginalSprites[i].transform.position);
+                Sprites[i].transform.localRotation = OriginalSprites[i].transform.rotation;
+                
             }
         }
     }

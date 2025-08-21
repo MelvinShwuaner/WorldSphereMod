@@ -14,6 +14,30 @@ namespace WorldSphereMod
 {
     public static class Tools
     {
+        public static T CopyComponent<T>(T original, GameObject destination) where T : Component
+        {
+            System.Type type = original.GetType();
+            Component copy = destination.AddComponent(type);
+
+            FieldInfo[] fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
+            foreach (FieldInfo field in fields)
+            {
+                field.SetValue(copy, field.GetValue(original));
+            }
+
+            PropertyInfo[] properties = type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
+            foreach (PropertyInfo property in properties)
+            {
+                if (property.CanWrite)
+                {
+                    property.SetValue(copy, property.GetValue(original, null), null);
+                }
+            }
+
+            return copy as T;
+        }
         public static void AddChildrenToList(this Transform Transform, ref List<Transform> list)
         {
             foreach(Transform transform in Transform)

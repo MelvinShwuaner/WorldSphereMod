@@ -59,7 +59,6 @@ namespace WorldSphereMod
             WorldSphereTab.Begin();
             DimensionConverter.Prepare();
             Patch();
-            FixCrabzilla.Prepare();
             CameraManager.Begin();
             DoSomeOtherStuff();
         }
@@ -93,6 +92,7 @@ namespace WorldSphereMod
             Patcher.PatchAll(typeof(EffectPatches));
             Patcher.PatchAll(typeof(MovementEnhancement));
             Patcher.PatchAll(typeof(Drop3D));
+            Patcher.PatchAll(typeof(FixCrabzilla));
             Patcher.PatchAll(typeof(AddLayers));
             Patcher.PatchAll(typeof(QuantumSpritePatches));
             Patcher.PatchAll(typeof(WorldLoop));
@@ -180,12 +180,6 @@ namespace WorldSphereMod
             DimensionConverter.ConvertQuantum(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.set), new Type[] { typeof(Vector3).MakeByRefType(), typeof(float) }), DimensionConverter.ToQuantumWithHeight);
             DimensionConverter.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.set), new Type[] { typeof(Vector3).MakeByRefType(), typeof(Vector2).MakeByRefType() }));
             DimensionConverter.ConvertPositions(Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.set), new Type[] { typeof(Vector3).MakeByRefType(), typeof(Vector3).MakeByRefType() }));
-            //wtf
-            DimensionConverter.ConvertPositions(Method(typeof(CrabLeg), nameof(CrabLeg.update)));
-            DimensionConverter.ConvertPositions(Method(typeof(CrabLeg), nameof(CrabLeg.moveLeg)));
-            DimensionConverter.ConvertPositions(Method(typeof(CrabLegJoint), nameof(CrabLegJoint.isAngleOk)));
-            DimensionConverter.ConvertPositions(Method(typeof(CrabLegJoint), nameof(CrabLegJoint.LateUpdate)), 5, 6, 7, 8);
-            DimensionConverter.ConvertPositions(Method(typeof(Crabzilla), nameof(Crabzilla.update)), 1, 2, 3, 4);
         } 
         public static void Become3D()
         {
@@ -195,7 +189,6 @@ namespace WorldSphereMod
         }
         static void Do3DStuff()
         {
-            FixCrabzilla.Set3D();
             World.world.heat_ray_fx.ray.transform.localPosition = Vector3.zero;
             World.world.heat_ray_fx.ray.transform.eulerAngles = new Vector3(180, 0, 0);
         }
@@ -207,7 +200,6 @@ namespace WorldSphereMod
         }
         static void do2DStuff()
         {
-            FixCrabzilla.Set2D();
             World.world.heat_ray_fx.ray.transform.localPosition = new Vector3(0, 2000);
             World.world.heat_ray_fx.ray.transform.eulerAngles = Vector3.zero;
         }

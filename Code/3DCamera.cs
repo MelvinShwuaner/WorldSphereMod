@@ -75,6 +75,7 @@ namespace WorldSphereMod.NewCamera
             MainCamera.transparencySortMode = TransparencySortMode.Default;
             Manager = MoveCamera.instance;
             OriginalCamera = Manager.mainCamera;
+            RotateCamera.UpdateRotation(Vector2.zero);
         }
         public static MoveCamera Manager;
         public static Camera MainCamera;
@@ -181,7 +182,7 @@ namespace WorldSphereMod.NewCamera
             tCam.y = tPos.y;
             if (!Core.savedSettings.FirstPerson && Core.IsWorld3D)
             {
-                tCam += (Vector3)GetMovementVector(-3, true);
+                tCam += (Vector3)GetMovementVector(-Height/2, true);
             }
             float tSpeed = 1f / World.world.camera.orthographicSize;
             World.world.camera.transform.position = Vector3.Lerp(World.world.camera.transform.position, tCam, tSpeed);
@@ -191,7 +192,7 @@ namespace WorldSphereMod.NewCamera
     [HarmonyPatch(typeof(MoveCamera), nameof(MoveCamera.updateMouseCameraDrag))]
     public class RotateCamera
     {
-        public static Vector3 Rotation = new Vector3(0, 90);
+        public static Vector3 Rotation = new Vector3(30, 90);
         static bool Prefix()
         {
             if (Core.IsWorld3D)
@@ -205,7 +206,7 @@ namespace WorldSphereMod.NewCamera
         {
             get { return Rotation.x < 90 || Rotation.x > 270 ? 1 : -1; }
         }
-        static void UpdateRotation(Vector2 Change)
+        public static void UpdateRotation(Vector2 Change)
         {
             Rotation.x = Tools.MathStuff.Wrap(Rotation.x, -Change.y, 360);
             Rotation.y = Rotation.y + (Change.x * InvertMult);
