@@ -117,19 +117,20 @@ namespace WorldSphereMod.UI
         static void CreateButtons()
         {
             CreateToggleButton("Is3D", "WorldSphereMod/ModIcon", "Is 3D", "This is ONLY applied once you reload the world", Toggle3D, Core.savedSettings.Is3D);
-            CreateWindowButton("Sprite Settings", "WorldSphereMod/icon", "Sprite Settings", "settings about the sprites in the game", "WARNING! THESE ARE EXPENSIVE", new List<ButtonData>()
+            CreateWindowButton("Sprite Settings", "WorldSphereMod/Rotate", "Sprite Settings", "settings about the sprites in the game", "WARNING! THESE ARE EXPENSIVE", new List<ButtonData>()
             {
-               new ButtonData("Sprites Rotate To Camera", "will sprites rotate to the camera?", "WorldSphereMod/icon", Core.savedSettings.RotateStuffToCamera, ToggleRotations),
-               new ButtonData("Advanced Rotations", "sprites will rotate to the camera in a less buggy, but more expensive method!", "WorldSphereMod/icon", Core.savedSettings.RotateStuffToCameraAdvanced, ToggleAdvancedRotations)
+               new ButtonData("Sprites Rotate To Camera", "will sprites rotate to the camera?", "WorldSphereMod/Rotate", Core.savedSettings.RotateStuffToCamera, ToggleRotations),
+               new ButtonData("Advanced Rotations", "sprites will rotate to the camera in a less buggy, but more expensive method!", "WorldSphereMod/Rotate", Core.savedSettings.RotateStuffToCameraAdvanced, ToggleAdvancedRotations)
             }
             );
+            GenerateSlider("Building Size", 0.1f, 5f, Core.savedSettings.BuildingSize, (float val) => { Core.savedSettings.BuildingSize = val; Core.SaveSettings(); }, "Sprite Settings");
             CreateWindowButton("Camera Settings", "WorldSphereMod/Camera", "Camera Settings", "Settings for the 3D Camera", "", new List<ButtonData>()
             {
                 new ButtonData("Inverted Camera", "if true, the horizontal and vertical movement of the camera will be swapped", "WorldSphereMod/Camera", Core.savedSettings.InvertedCameraMovement, ToggleCamera),
                 new ButtonData("First Person", "When Controlling a unit, you will be playing in First Person", "WorldSphereMod/Camera", Core.savedSettings.FirstPerson, ToggleFirtPerson)
             });
             GenerateSlider("Render Distance", 1, 20, Core.savedSettings.RenderRange, (float val) => { Core.savedSettings.RenderRange = val; Core.SaveSettings(); }, "Camera Settings");
-            CreateWindowButton("World Settings", "WorldSphereMod/icon", "World Settings", "The Settings Of The World", "these will only apply when you regenerate the world!", new List<ButtonData>()
+            CreateWindowButton("World Settings", "WorldSphereMod/World", "World Settings", "The Settings Of The World", "these will only apply when you regenerate the world!", new List<ButtonData>()
             {
                 new ButtonData("CylindricalShape", "Makes the World a Cylinder", "WorldSphereMod/Round", Core.savedSettings.CurrentShape == 0, SetShape, false),
                 new ButtonData("FlatShape", "Makes the World Flat", "WorldSphereMod/Flat", Core.savedSettings.CurrentShape == 1, SetShape, false)

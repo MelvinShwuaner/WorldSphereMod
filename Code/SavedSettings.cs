@@ -4,7 +4,7 @@ namespace WorldSphereMod
     [Serializable]
     public class SavedSettings
     {
-        public string Version = "1.1.1";
+        public string Version = "1.2";
         public bool Is3D = true;
         public bool InvertedCameraMovement = true;
         public bool RotateStuffToCamera = true;
@@ -12,6 +12,7 @@ namespace WorldSphereMod
         public bool FirstPerson = true;
         public float RenderRange = 2;
         public float TileHeight = 1;
+        public float BuildingSize = 0.5f;
         public int CurrentShape = 1;
     }
 }

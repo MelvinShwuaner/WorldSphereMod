@@ -24,7 +24,7 @@ namespace WorldSphereMod
     public static class Core
     {
         public static SavedSettings savedSettings = new SavedSettings();
-        public static string SettingsVersion = "1.1.1";
+        public static string SettingsVersion = "1.2";
 
         public static Harmony Patcher;
         public static void SaveSettings()

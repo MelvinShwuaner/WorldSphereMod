@@ -518,7 +518,7 @@ namespace WorldSphereMod.QuantumSprites
                 {
                     Building tBuilding = tArrayVisibleBuildings[tIndex];
                     BuildingAsset tAsset = tBuilding.asset;
-                    tRenderScales[tIndex] = tBuilding.getCurrentScale();
+                    tRenderScales[tIndex] = tBuilding.getCurrentScale() * Core.savedSettings.BuildingSize;
                     tRenderPositions[tIndex] = tBuilding.Get3DPos();
                     tRenderRotations[tIndex] = tBuilding.Get3DRot();
                     tRenderMaterials[tIndex] = tBuilding.material;
