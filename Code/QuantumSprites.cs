@@ -305,6 +305,17 @@ namespace WorldSphereMod.QuantumSprites
             }
             return true;
         }
+        [HarmonyPatch(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawProjectiles))]
+        [HarmonyTranspiler]
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        {
+            CodeMatcher Matcher = new CodeMatcher(instructions, generator);
+            Matcher.MatchForward(false, new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(Transform), "set_rotation")));
+            Matcher.RemoveInstruction();
+            Matcher.Insert(new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(Tools), nameof(Tools.AddRotation))));
+            return Matcher.Instructions();
+        }
+
     }
     [HarmonyPatch(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawQuantumSprite), new Type[] { typeof(QuantumSpriteAsset), typeof(Vector3), typeof(WorldTile), typeof(Kingdom), typeof(City), typeof(BattleContainer), typeof(float), typeof(bool), typeof(float) })]
     public class MainQuantumSpritePatch

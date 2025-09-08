@@ -228,6 +228,10 @@ namespace WorldSphereMod.General
             if (Core.IsWorld3D)
             {
                 __instance.transform.position = Tools.To3D(__instance.current_position, __instance._currentHeightZ);
+                if (!__instance._asset.animation_rotation)
+                {
+                    __instance.transform.rotation = Tools.RotateToCameraAtTile(__instance.current_position.AsIntClamped());
+                }
                 return false;
             }
             return true;

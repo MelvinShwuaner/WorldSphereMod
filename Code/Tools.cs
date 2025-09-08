@@ -38,6 +38,10 @@ namespace WorldSphereMod
 
             return copy as T;
         }
+        public static void AddRotation(this Transform Transform, Quaternion rot)
+        {
+            Transform.rotation *= rot;
+        }
         public static void AddChildrenToList(this Transform Transform, ref List<Transform> list)
         {
             foreach(Transform transform in Transform)
