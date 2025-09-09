@@ -33,25 +33,25 @@ namespace WorldSphereMod
         }
         public static Vector3 CartesianToFlat(SphereManager manager, float X, float Y, float Height = 0)
         {
-            return new Vector3(-X, Height, Y+ZDisplacement);
+            return new Vector3(X, Height, Y+ZDisplacement);
         }
         public static Vector3 FlatToCartesian(SphereManager manager, float x, float y, float z)
         {
-            return new Vector3(-x, z-ZDisplacement, y);
+            return new Vector3(x, z-ZDisplacement, y);
         }
         public static Vector2 FlatToCartesianFast(SphereManager manager, float x, float y, float z)
         {
-            return new Vector2(-x, z-ZDisplacement);
+            return new Vector2(x, z-ZDisplacement);
         }
         public static Vector3 CartesianToCylindrical(SphereManager manager, float X, float Y, float Height = 0)
         {
-            Vector2 xy = Tools.MathStuff.PointOnCircle(X, manager.Radius, Height);
+            Vector2 xy = Tools.MathStuff.PointOnCircle(-X, manager.Radius, Height);
             float z = Y+ZDisplacement;
             return new Vector3(xy.x, xy.y, z);
         }
         public static Vector3 CylindricalToCartesian(SphereManager manager, float x, float y, float z)
         {
-            float X = manager.Clamp(Mathf.Atan2(y, x) / (2f * Mathf.PI) * manager.Rows, 0);
+            float X = manager.Clamp(Tools.MathStuff.Flip(Mathf.Atan2(y, x) / (2f * Mathf.PI) * manager.Rows, manager.Rows), 0);
             float Y = z-ZDisplacement;
             float Height = Mathf.Sqrt((x * x) + (y * y)) - manager.Radius;
             return new Vector3(X, Y, Height);
@@ -59,7 +59,8 @@ namespace WorldSphereMod
         //doesnt calculate height
         public static Vector2 CylindricalToCartesianFast(SphereManager manager, float x, float y, float z)
         {
-            float X = manager.Clamp(Mathf.Atan2(y, x) / (2f * Mathf.PI) * manager.Rows, 0);
+            float X = manager.Clamp(Tools.MathStuff.Flip(Mathf.Atan2(y, x) / (2f * Mathf.PI) * manager.Rows, manager.Rows), 0);
+            Debug.Log(X);
             float Y = z-ZDisplacement;
             return new Vector2Int((int)X, (int)Y);
         }
@@ -76,7 +77,7 @@ namespace WorldSphereMod
         public static void FlatInitiation(SphereManager Manager)
         {
             GameObject Quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            Quad.transform.SetPositionAndRotation(new Vector3(-(Manager.Rows / 2) + 0.5f, 0, (Manager.Cols / 2) - 0.5f+ZDisplacement), Quaternion.Euler(90, 0, 0));
+            Quad.transform.SetPositionAndRotation(new Vector3((Manager.Rows / 2) + 0.5f, 0, (Manager.Cols / 2) - 0.5f+ZDisplacement), Quaternion.Euler(90, 0, 0));
             Quad.transform.localScale = new Vector3(Manager.Rows, Manager.Cols, 1);
             Object.Destroy(Quad.GetComponent<MeshRenderer>());
             Quad.GetComponent<MeshCollider>().convex = true; //why the fuck?

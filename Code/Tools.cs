@@ -345,12 +345,12 @@ namespace WorldSphereMod
             86 => 5.6f,
             #endregion
             #region peaks
-            92 => Randy.randomFloat(7, 7.5f), //hills
+            92 => Randy.randomFloat(8.5f, 9f), //hills
             93 => TrueHeight(BaseHeight) + 0.1f,
-            94 => Randy.randomFloat(10, 14), //mountains
+            94 => Randy.randomFloat(12, 17), //mountains
             95 => TrueHeight(BaseHeight) + 0.1f,
-            96 => 16f, //summit
-            97 => 16.2f,
+            96 => 19f, //summit
+            97 => 19.2f,
             #endregion
             #region special
             30 => TrueHeight(BaseHeight) - 0.25f, //road
@@ -502,6 +502,15 @@ namespace WorldSphereMod
         //behold,the class i had to use ai for
         public static class MathStuff
         {
+            public static float Flip(float X, float Max)
+            {
+                float Half = Max / 2;
+                if(X > Half)
+                {
+                   return X + ((Max-X)*2);
+                }
+                return X - (X*2);
+            }
             public static Vector3 WrappedMoveTowards(Vector3 current, Vector3 target, float maxDistanceDelta, float worldWidth)
             {
                 float dx = target.x - current.x;
@@ -522,7 +531,7 @@ namespace WorldSphereMod
             //dist but with direction
             public static Vector2 Direction3D(float x1, float x2, float y1, float y2)
             {
-                float x = WrappedDist(x1, x2);
+                float x = WrappedDist(x2, x1, Core.Sphere.Width);
                 float y = y1 - y2;
                 return new Vector2(x, y);
             }

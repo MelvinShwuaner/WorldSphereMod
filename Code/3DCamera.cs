@@ -122,7 +122,7 @@ namespace WorldSphereMod.NewCamera
                 vector = transform.right * Speed;
                 vector.x *= RotateCamera.InvertMult;
             }
-            return new Vector2(vector.z, vector.x);
+            return new Vector2(-vector.z, vector.x);
         }
         public static void Move(HotkeyAsset pAsset)
         {

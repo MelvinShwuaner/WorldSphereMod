@@ -37,6 +37,7 @@ namespace WorldSphereMod.QuantumSprites
             if (Object._last_pos_v3.x != pPosition.x || Object._last_pos_v3.y != pPosition.y || Object._last_pos_v3.z != pPosition.z)
             {
                 Object._last_pos_v2 = pPosition;
+                
                 Object._last_pos_v3 = pPosition;
                 if (!pAsset.IsQuantumUpright())
                 {
