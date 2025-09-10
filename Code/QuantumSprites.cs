@@ -273,7 +273,7 @@ namespace WorldSphereMod.QuantumSprites
                 Color tColorSelection = World.world.getArchitectColor();
                 Vector2 tStart = World.world.player_control.square_selection_position_current;
                 Vector2 tEnd = World.world.getMousePos();
-                float tWidth = tEnd.x - tStart.x;
+                float tWidth = tStart.x - tEnd.x;
                 float tHeight = tEnd.y - tStart.y;
                 float tLineSize = 0.1f * tCameraScaleZoomMultiplier;
                 Color tColorMain = tColorSelection;
