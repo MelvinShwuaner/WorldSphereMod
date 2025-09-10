@@ -89,8 +89,13 @@ namespace WorldSphereMod.NewCamera
                 return;
             }
             MainCamera.transform.position = Core.Sphere.SpherePos(Position.x, Position.y, Height);
-            float MinZoom = CameraTile.TileHeight()+1;
-            if ((ControllableUnit._unit_main != null && Core.savedSettings.FirstPerson) || Manager._target_zoom < MinZoom)
+            if (ControllableUnit._unit_main != null && Core.savedSettings.FirstPerson)
+            {
+                Manager._target_zoom = ControllableUnit._unit_main.position_height + (ControllableUnit._unit_main.current_scale.y*10) + CameraTile.TileHeight();
+                Debug.Log(ControllableUnit._unit_main.current_scale.y);
+            }
+            float MinZoom = CameraTile.TileHeight() + 1;
+            if (Manager._target_zoom < MinZoom)
             {
                 Manager._target_zoom = MinZoom;
             }

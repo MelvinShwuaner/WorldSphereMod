@@ -285,7 +285,7 @@ namespace WorldSphereMod
             19 => 2.3f, //snowy sand
             #endregion
             #region biomes
-            20 => 2.5f, //soil low //high is 3 higher then low
+            20 => 2.5f, //soil low //high is 1.5 higher then low
             21 => 4f, //soil high
             22 => 2.55f, //wasteland
             23 => 4.05f, //wasteland high
