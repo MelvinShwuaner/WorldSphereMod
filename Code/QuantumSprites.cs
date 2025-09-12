@@ -132,6 +132,20 @@ namespace WorldSphereMod.QuantumSprites
             quantumSprite.setSprite(pSprite);
             quantumSprite.setColor(ref pColor);
         }
+        public static void SetPos(this QuantumSprite sprite, ref Vector3 pPosition)
+        {
+            if (!Core.IsWorld3D)
+            {
+                sprite.setPosOnly(ref pPosition);
+                return;
+            }
+            if (sprite._last_pos_v3.x != pPosition.x || sprite._last_pos_v3.y != pPosition.y || sprite._last_pos_v3.z != pPosition.z)
+            {
+                sprite._last_pos_v2 = pPosition;
+                sprite._last_pos_v3 = pPosition;
+                sprite.m_transform.localPosition = Tools.To3DTileHeight(pPosition, 0.1f);
+            }
+        }
     }
     public class QuantumSpritePatches
     {
@@ -322,7 +336,16 @@ namespace WorldSphereMod.QuantumSprites
             Matcher.Insert(new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(Tools), nameof(Tools.AddRotation))));
             return Matcher.Instructions();
         }
-
+        [HarmonyPatch(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawBuildings))]
+        [HarmonyTranspiler]
+        public static IEnumerable<CodeInstruction> buildings(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        {
+            CodeMatcher Matcher = new CodeMatcher(instructions, generator);
+            Matcher.MatchForward(false, new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.setPosOnly), new Type[] {typeof(Vector3).MakeByRefType()})));
+            Matcher.RemoveInstruction();
+            Matcher.Insert(new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(Manager), nameof(Manager.SetPos))));
+            return Matcher.Instructions();
+        }
     }
     [HarmonyPatch(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawQuantumSprite), new Type[] { typeof(QuantumSpriteAsset), typeof(Vector3), typeof(WorldTile), typeof(Kingdom), typeof(City), typeof(BattleContainer), typeof(float), typeof(bool), typeof(float) })]
     public class MainQuantumSpritePatch
@@ -557,7 +580,7 @@ namespace WorldSphereMod.QuantumSprites
                     Building tBuilding = tArrayVisibleBuildings[tIndex];
                     BuildingAsset tAsset = tBuilding.asset;
                     tRenderScales[tIndex] = tBuilding.getCurrentScale() * Core.savedSettings.BuildingSize;
-                    tRenderPositions[tIndex] = tBuilding.Get3DPos();
+                    tRenderPositions[tIndex] = tBuilding.cur_transform_position;
                     tRenderRotations[tIndex] = tBuilding.Get3DRot();
                     tRenderMaterials[tIndex] = tBuilding.material;
                     tRenderFlipXStates[tIndex] = tBuilding.flip_x;

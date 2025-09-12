@@ -24,9 +24,10 @@ namespace WorldSphereMod.General
             }
         }
         [HarmonyPatch(typeof(MapBox), nameof(MapBox.addClearWorld))]
-        [HarmonyPostfix]
-        static void DestroySphere()
+        [HarmonyPrefix]
+        static void DestroySphere(ref int pNextWidth)
         {
+            pNextWidth = -1;
             Core.Generated = false;
             SmoothLoader.add(delegate { Core.Become2D(); }, "Becoming 2D!");
         }

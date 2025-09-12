@@ -139,8 +139,8 @@ namespace WorldSphereMod.UI
         }
         static Dictionary<string, int> WorldShapes = new Dictionary<string, int>()
         {
-            { "CylindricalShape", 0 },
-            { "FlatShape", 1 }
+            { "cylindrical_shape", 0 },
+            { "flat_shape", 1 }
         };
         static void SetShape(string ID)
         {

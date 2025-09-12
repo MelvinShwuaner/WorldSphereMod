@@ -126,12 +126,19 @@ namespace WorldSphereMod.NewCamera
                 vector = transform.right * Speed;
                 vector.x *= RotateCamera.InvertMult;
             }
-            return new Vector2(-vector.z, vector.x);
+            return new Vector2(vector.z * XSpeed, vector.x);
+        }
+        public static float XSpeed
+        {
+            get
+            {
+                return Core.Sphere.IsWrapped ? -0.5f : -1;
+            }
         }
         public static void Move(HotkeyAsset pAsset)
         {
             string id = pAsset.id;
-            float tMove = MoveCamera.getMoveDistance(pAsset.id.StartsWith("fast_")) * 5 / Manager._target_zoom;
+            float tMove = MoveCamera.getMoveDistance(pAsset.id.StartsWith("fast_"));
             float Change = id.Contains("up") || id.Contains("right") ? tMove : -tMove;
             bool Vertical = id.Contains("down") || id.Contains("up");
             Manager._move_velocity += GetMovementVector(Change, Vertical);
