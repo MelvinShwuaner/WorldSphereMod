@@ -122,7 +122,7 @@ namespace WorldSphereMod.QuantumSprites
             Vector3 tPos = pMainPosition;
             tPos.z -= 1;
             tPos.y += (0.58f * pRow)-5;
-            tPos.x -= (0.5f * pColumn)-1;
+            tPos.x += (0.5f * pColumn)+2;
             if (pColumn % 2 != 0)
             {
                 tPos.y += 0.29f;
@@ -135,6 +135,12 @@ namespace WorldSphereMod.QuantumSprites
     }
     public class QuantumSpritePatches
     {
+        [HarmonyPatch(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawSelectedUnits))]
+        [HarmonyPrefix]
+        public static bool drawselectedunits()
+        {
+            return !(Core.IsWorld3D && ControllableUnit._unit_main != null);
+        }
         [HarmonyPatch(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawResourceIconOnStockpile))]
         [HarmonyPrefix]
         private static bool drawresourceiconpatch(QuantumSpriteAsset pAsset, Vector3 pMainPosition, Sprite pSprite, int pIndex, int pRow, int pColumn, ref Color pColor)
@@ -329,7 +335,7 @@ namespace WorldSphereMod.QuantumSprites
             }
             if (pAsset.id == "highlight_cursor_zones" || pAsset.id == "square_selection")
             {
-                pPos.z = 10;
+                pPos.z = 4 * Core.Sphere.HeightMult;
             }
             else
             {
@@ -381,7 +387,8 @@ namespace WorldSphereMod.QuantumSprites
                 {
                     Actor tActor = tArray[tIndex];
                     Vector3 tActorScale = tActor.current_scale;
-                    Vector3 tCurrentActorPos = tActor.updatePos().To3DTileHeight(true);
+                    Vector3 v = tActor.updatePos();
+                    Vector3 tCurrentActorPos = Tools.To3DTileHeight(v, v.z + 0.1f);
                     Vector3 tActorRotation = tActor.Get3DRot();
                     bool tHasRenderedItem = tActor.checkHasRenderedItem();
                     bool tHasNormalRender = !tActor.asset.ignore_generic_render;
@@ -411,29 +418,59 @@ namespace WorldSphereMod.QuantumSprites
                     __instance.render_data.has_item[tIndex] = tHasRenderedItem;
                     __instance.render_data.item_sprites[tIndex] = tItemSpriteFinal;
                     AnimationFrameData tFrameData = tActor.getAnimationFrameData();
+                    bool tHaveShadow = false;
                     if (tShouldRenderUnitShadows && tActor.show_shadow)
                     {
-                        __instance.render_data.shadow_sprites[tIndex] = tActor.asset.shadow_sprite;
-                        float tAbsAngle = Mathf.Abs(tActorRotation.z);
-                        Vector2 tSizeShadow = tActor.asset.shadow_size * tActorScale;
-                        int tFlip = (tActor.flip ? 1 : (-1));
-                        float tOffsetX = tSizeShadow.x / 2f;
-                        float tOffsetY = tSizeShadow.y * 0.6f;
-                        Vector2 tShadowPosition = tActor.current_shadow_position;
-                        tShadowPosition.x += tOffsetX * (tActorRotation.z * (float)tFlip) / 90f;
-                        tShadowPosition.y -= tOffsetY * tAbsAngle / 90f;
-                        __instance.render_data.shadow_position[tIndex] = tShadowPosition;
-                        if (tFrameData != null && tFrameData.size_unit != default(Vector2))
+                        ActorTextureSubAsset tSubAsset;
+                        if (tActor.hasSubspecies() && tActor.subspecies.has_mutation_reskin)
                         {
-                            float tScaleWidthLay = (tFrameData.size_unit * tActorScale).y / tSizeShadow.x * tActorScale.x;
-                            float tScaleX = Mathf.Lerp(tActorScale.x, tScaleWidthLay, tAbsAngle / 90f);
-                            __instance.render_data.shadow_scales[tIndex] = new Vector2(tScaleX, tActorScale.y);
+                            tSubAsset = tActor.subspecies.mutation_skin_asset.texture_asset;
                         }
                         else
                         {
-                            __instance.render_data.shadow_scales[tIndex] = tActorScale;
+                            tSubAsset = tActor.asset.texture_asset;
+                        }
+                        tHaveShadow = tSubAsset.shadow;
+                        if (tSubAsset.shadow)
+                        {
+                            Vector2 tSizeShadow;
+                            if (tActor.isEgg())
+                            {
+                                __instance.render_data.shadow_sprites[tIndex] = tSubAsset.shadow_sprite_egg;
+                                tSizeShadow = tSubAsset.shadow_size_egg;
+                            }
+                            else if (tActor.isBaby())
+                            {
+                                __instance.render_data.shadow_sprites[tIndex] = tSubAsset.shadow_sprite_baby;
+                                tSizeShadow = tSubAsset.shadow_size_baby;
+                            }
+                            else
+                            {
+                                __instance.render_data.shadow_sprites[tIndex] = tSubAsset.shadow_sprite;
+                                tSizeShadow = tSubAsset.shadow_size;
+                            }
+                            tSizeShadow *= tActorScale;
+                            int tFlip = (tActor.flip ? 1 : (-1));
+                            float tOffsetX = tSizeShadow.x / 2f;
+                            float tOffsetY = tSizeShadow.y * 0.6f;
+                            float tAbsAngle = Mathf.Abs(tActorRotation.z);
+                            Vector2 tShadowPosition = tActor.current_shadow_position;
+                            tShadowPosition.x += tOffsetX * (tActorRotation.z * (float)tFlip) / 90f;
+                            tShadowPosition.y -= tOffsetY * tAbsAngle / 90f;
+                            __instance.render_data.shadow_position[tIndex] = tShadowPosition;
+                            if (tFrameData != null && tFrameData.size_unit != default(Vector2))
+                            {
+                                float tScaleWidthLay = (tFrameData.size_unit * tActorScale).y / tSizeShadow.x * tActorScale.x;
+                                float tScaleX = Mathf.Lerp(tActorScale.x, tScaleWidthLay, tAbsAngle / 90f);
+                                __instance.render_data.shadow_scales[tIndex] = new Vector2(tScaleX, tActorScale.y);
+                            }
+                            else
+                            {
+                                __instance.render_data.shadow_scales[tIndex] = tActorScale;
+                            }
                         }
                     }
+                    __instance.render_data.shadows[tIndex] = tHaveShadow;
                     if (tHasNormalRender)
                     {
                         if (tActor.canParallelSetColoredSprite())

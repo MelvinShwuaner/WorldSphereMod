@@ -26,7 +26,7 @@ namespace WorldSphereMod.NewCamera
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             CodeMatcher Matcher = new CodeMatcher(instructions);
-            Matcher.MatchForward(false, new CodeMatch(OpCodes.Ldfld, AccessTools.Field(typeof(MoveCamera), nameof(MoveCamera.mainCamera))));
+            Matcher.MatchForward(false, new CodeMatch(OpCodes.Ldfld, AccessTools.Field(typeof(MoveCamera), nameof(MoveCamera.main_camera))));
             Matcher.RemoveInstruction();
             Matcher.Insert(new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Bounds), nameof(Bounds.GetCamera))));
             return Matcher.Instructions();
@@ -59,13 +59,13 @@ namespace WorldSphereMod.NewCamera
         {
             OriginalCamera.enabled = false;
             MainCamera.enabled = true;
-            Manager.mainCamera = MainCamera;
+            Manager.main_camera = MainCamera;
         }
         public static void MakeCamera2D()
         {
             OriginalCamera.enabled = true;
             MainCamera.enabled = false;
-            Manager.mainCamera = OriginalCamera;
+            Manager.main_camera = OriginalCamera;
         }
         //i want to rename this function to prepare but for some reason that breaks something. this is so fucking random i have no fucking idea how thats even possible
         public static void Begin()
@@ -74,14 +74,14 @@ namespace WorldSphereMod.NewCamera
             MainCamera.gameObject.tag = "MainCamera";
             MainCamera.transparencySortMode = TransparencySortMode.Default;
             Manager = MoveCamera.instance;
-            OriginalCamera = Manager.mainCamera;
+            OriginalCamera = Manager.main_camera;
             RotateCamera.UpdateRotation(Vector2.zero);
         }
         public static MoveCamera Manager;
         public static Camera MainCamera;
         public static Camera OriginalCamera;
         public static float Height;
-        public static float MaxHeight => Manager.orthographicSizeMax;
+        public static float MaxHeight => Manager.orthographic_size_max;
         static void Postfix()
         {
             if (!Core.IsWorld3D)
@@ -92,7 +92,6 @@ namespace WorldSphereMod.NewCamera
             if (ControllableUnit._unit_main != null && Core.savedSettings.FirstPerson)
             {
                 Manager._target_zoom = ControllableUnit._unit_main.position_height + (ControllableUnit._unit_main.current_scale.y*10) + CameraTile.TileHeight();
-                Debug.Log(ControllableUnit._unit_main.current_scale.y);
             }
             float MinZoom = CameraTile.TileHeight() + 1;
             if (Manager._target_zoom < MinZoom)
@@ -135,7 +134,7 @@ namespace WorldSphereMod.NewCamera
             float tMove = MoveCamera.getMoveDistance(pAsset.id.StartsWith("fast_")) * 5 / Manager._target_zoom;
             float Change = id.Contains("up") || id.Contains("right") ? tMove : -tMove;
             bool Vertical = id.Contains("down") || id.Contains("up");
-            Manager._key_move_velocity += (Vector3)GetMovementVector(Change, Vertical);
+            Manager._move_velocity += GetMovementVector(Change, Vertical);
         }
         [HarmonyPatch(typeof(MoveCamera), nameof(MoveCamera.move))]
         [HarmonyPrefix]
@@ -259,7 +258,7 @@ namespace WorldSphereMod.NewCamera
                 Cam._origin = MousePos;
                 if (InputHelpers.touchSupported)
                 {
-                    MoveCamera._touch_dist = Toolbox.DistVec3(Cam._first_touch, Cam.TouchPos(true));
+                    MoveCamera._touch_dist = Toolbox.DistVec3(Cam._first_touch, Cam.getTouchPos(true));
                     if (World.world.player_control.touch_ticks_skip > 5)
                     {
                         if (MoveCamera._touch_dist >= 20f || (float)World.world.player_control.touch_ticks_skip > 0.3f)
@@ -340,20 +339,20 @@ namespace WorldSphereMod.NewCamera
             int height = MapBox.height;
             if (width > height)
             {
-                Manager.orthographicSizeMax = AsMaxHeight(width);
+                Manager.orthographic_size_max = AsMaxHeight(width);
             }
             else
             {
-                Manager.orthographicSizeMax = AsMaxHeight(height);
+                Manager.orthographic_size_max = AsMaxHeight(height);
             }
-            if (tInitialZoom > Manager.orthographicSizeMax)
+            if (tInitialZoom > Manager.orthographic_size_max)
             {
-                tInitialZoom = (int)Manager.orthographicSizeMax;
+                tInitialZoom = (int)Manager.orthographic_size_max;
             }
             Manager._target_zoom = tInitialZoom;
-            Manager.mainCamera.orthographicSize = Mathf.Clamp(Manager._target_zoom, 2f, Manager.orthographicSizeMax);
-            World.world.setZoomOrthographic(Manager.mainCamera.orthographicSize);
-            Manager.mainCamera.farClipPlane = 20000;
+            Manager.main_camera.orthographicSize = Mathf.Clamp(Manager._target_zoom, 2f, Manager.orthographic_size_max);
+            World.world.setZoomOrthographic(Manager.main_camera.orthographicSize);
+            Manager.main_camera.farClipPlane = 20000;
         }
         static bool Prefix()
         {
@@ -384,6 +383,28 @@ namespace WorldSphereMod.NewCamera
                 return CameraTile.TileHeight() + 1;
             }
             return 10;
+        }
+    }
+    [HarmonyPatch(typeof(MoveCamera), nameof(MoveCamera.updateVelocity))]
+    class UpdateVelocity
+    {
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            CodeMatcher Matcher = new CodeMatcher(instructions);
+            Matcher.MatchForward(false, new CodeMatch(OpCodes.Call, AccessTools.Method(typeof(InputHelpers), nameof(InputHelpers.GetMouseButton))));
+            {
+                Matcher.RemoveInstruction();
+                Matcher.Insert(new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(UpdateVelocity), nameof(GetMouseIf2D))));
+            }
+            return Matcher.Instructions();
+        }
+        public static bool GetMouseIf2D(int pButton)
+        {
+            if (Core.IsWorld3D)
+            {
+                return false;
+            }
+            return InputHelpers.GetMouseButton(pButton);
         }
     }
 }

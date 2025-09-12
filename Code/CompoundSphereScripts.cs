@@ -60,7 +60,6 @@ namespace WorldSphereMod
         public static Vector2 CylindricalToCartesianFast(SphereManager manager, float x, float y, float z)
         {
             float X = manager.Clamp(Tools.MathStuff.Flip(Mathf.Atan2(y, x) / (2f * Mathf.PI) * manager.Rows, manager.Rows), 0);
-            Debug.Log(X);
             float Y = z-ZDisplacement;
             return new Vector2Int((int)X, (int)Y);
         }
@@ -77,7 +76,7 @@ namespace WorldSphereMod
         public static void FlatInitiation(SphereManager Manager)
         {
             GameObject Quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            Quad.transform.SetPositionAndRotation(new Vector3((Manager.Rows / 2) + 0.5f, 0, (Manager.Cols / 2) - 0.5f+ZDisplacement), Quaternion.Euler(90, 0, 0));
+            Quad.transform.SetPositionAndRotation(new Vector3((Manager.Rows / 2) - 0.5f, 0, (Manager.Cols / 2) - 0.5f+ZDisplacement), Quaternion.Euler(90, 0, 0));
             Quad.transform.localScale = new Vector3(Manager.Rows, Manager.Cols, 1);
             Object.Destroy(Quad.GetComponent<MeshRenderer>());
             Quad.GetComponent<MeshCollider>().convex = true; //why the fuck?
@@ -91,14 +90,14 @@ namespace WorldSphereMod
         static float BaseRange => 4 - (1/RangeMult);
         public static void RenderRange(SphereManager SphereManager, out int Min, out int Max) 
         {
-           float Devide = BaseRange + (CameraManager.Manager.orthographicSizeMax / CameraManager.Height / RangeMult);
+           float Devide = BaseRange + (CameraManager.Manager.orthographic_size_max / CameraManager.Height / RangeMult);
            float Rows = SphereManager.Rows;
            Min = (int)-(Rows / Devide);
            Max = (int)(Rows / Devide); 
         }
         public static void RenderRangeFlat(SphereManager SphereManager, out int Min, out int Max)
         {
-            float Devide = (BaseRange + (CameraManager.Manager.orthographicSizeMax / CameraManager.Height / RangeMult))/4;
+            float Devide = (BaseRange + (CameraManager.Manager.orthographic_size_max / CameraManager.Height / RangeMult))/4;
             
             float Rows = SphereManager.Rows;
             Min = Mathf.Max((int)-(Rows / Devide), -(int)CameraManager.Position.x);

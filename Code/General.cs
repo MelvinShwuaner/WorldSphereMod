@@ -314,6 +314,17 @@ namespace WorldSphereMod.General
             }
 
         }
+        [HarmonyPatch(typeof(Dragon), nameof(Dragon.create))]
+        class dragonfix
+        {
+            static void Postfix(Dragon __instance)
+            {
+                if (Core.IsWorld3D)
+                {
+                    __instance.GetComponent<SpriteRenderer>().enabled = false;
+                }
+            }
+        }
         [HarmonyPatch(typeof(Actor), nameof(Actor.checkComponentListDispose))]
         [HarmonyPostfix]
         public static void DestroyCrabzilla(Actor __instance)
@@ -396,8 +407,8 @@ namespace WorldSphereMod.General
         {
             if (Core.IsWorld3D)
             {
-                Vector2 tViewportPosition = World.world.move_camera.mainCamera.WorldToViewportPoint(Tools.To3DTileHeight(pVec, 10));
-                __result = new Vector2(tViewportPosition.x * __instance.manager.canvasRect.sizeDelta.x - __instance.manager.canvasRect.sizeDelta.x * 0.5f, tViewportPosition.y * __instance.manager.canvasRect.sizeDelta.y - __instance.manager.canvasRect.sizeDelta.y * 0.5f);
+                Vector2 tViewportPosition = World.world.move_camera.main_camera.WorldToViewportPoint(Tools.To3DTileHeight(pVec, 10));
+                __result = new Vector2(tViewportPosition.x * __instance._manager.canvas_rect.sizeDelta.x - __instance._manager.canvas_rect.sizeDelta.x * 0.5f, tViewportPosition.y * __instance._manager.canvas_rect.sizeDelta.y - __instance._manager.canvas_rect.sizeDelta.y * 0.5f);
                 return false;
             }
             return true;

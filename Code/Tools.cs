@@ -10,6 +10,7 @@ using static WorldSphereMod.Constants;
 using System.Collections.Concurrent;
 using WorldSphereMod.General;
 using System.Collections.Generic;
+using System.Linq;
 namespace WorldSphereMod
 {
     public static class Tools
@@ -118,11 +119,11 @@ namespace WorldSphereMod
         }
         public static bool IsUpright(this Building building)
         {
-            return !building.asset.is_stockpile;
+            return !PerpBuildings.ContainsKey(building.asset.id);
         }
         public static bool IsUpright(this Actor actor)
         {
-            return !actor._has_status_sleeping;
+            return !actor.isLying() && !PerpActors.ContainsKey(actor.asset.id);
         }
         public static void MoveLabels(CodeInstruction PrevInstruction, CodeInstruction NewInstruction)
         {
@@ -252,7 +253,7 @@ namespace WorldSphereMod
         }
         public static Vector3 Get3DPos(this Building Building)
         {
-            return To3DTileHeight(Building.cur_transform_position);
+            return To3DTileHeight(Building.cur_transform_position, 0.1f);
         }
         public static Vector3 Get3DRot(this Building Building)
         {

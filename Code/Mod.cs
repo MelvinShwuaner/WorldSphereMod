@@ -1,8 +1,10 @@
 ﻿using CompoundSpheres;
 using NeoModLoader.api;
+using NeoModLoader.constants;
+using System.IO;
 using UnityEngine;
 using WorldSphereMod;
-    public class Mod : MonoBehaviour, IMod, IStagedLoad
+    public class Mod : MonoBehaviour, IMod, IStagedLoad, ILocalizable
 {
     public ModDeclare GetDeclaration()
     {
@@ -34,6 +36,11 @@ using WorldSphereMod;
     public void PostInit()
     {
         Core.PostInit();
+    }
+
+    public string GetLocaleFilesDirectory(ModDeclare pModDeclare)
+    {
+        return Path.Combine(pModDeclare.FolderPath, "Locales");
     }
 
     public static GameObject Object;

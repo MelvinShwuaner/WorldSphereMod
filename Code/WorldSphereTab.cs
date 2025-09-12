@@ -52,7 +52,7 @@ namespace WorldSphereMod.UI
         static void CreateTab()
         {
             ModIcon = Resources.Load<Sprite>("WorldSphereMod/ModIcon");
-            Tab = TabManager.CreateTab("WorldSphereMod", "WorldSphereMod", "A Mod that makes your game 3D!", ModIcon, "Created by Lord Melvin");
+            Tab = TabManager.CreateTab("WorldSphereMod", "world_sphere_tab", "world_sphere_tab_desc", ModIcon, "world_sphere_tab_author");
         }
         public static Text addText(string window, string textString, GameObject parent, int sizeFont, Vector3 pos, Vector2 addSize = default(Vector2))
         {
@@ -110,32 +110,32 @@ namespace WorldSphereMod.UI
             slider.handleRect = handleGO.GetComponent<RectTransform>();
 
             Text textGO = addText(Window, $"{Name} : {Current}", sliderGO, 10, new Vector3(0, -2));
-            slider.onValueChanged.AddListener((float x) => textGO.text = $"{Name} : {x}");
+            slider.onValueChanged.AddListener((float x) => textGO.text = $"{LM.Get(Name)} : {x}");
 
             return slider;
         }
         static void CreateButtons()
         {
-            CreateToggleButton("Is3D", "WorldSphereMod/ModIcon", "Is 3D", "This is ONLY applied once you reload the world", Toggle3D, Core.savedSettings.Is3D);
-            CreateWindowButton("Sprite Settings", "WorldSphereMod/Rotate", "Sprite Settings", "settings about the sprites in the game", "WARNING! THESE ARE EXPENSIVE", new List<ButtonData>()
+            CreateToggleButton("Is3D", "WorldSphereMod/ModIcon", "is_3d", "is_3d_description", Toggle3D, Core.savedSettings.Is3D);
+            CreateWindowButton("Sprite Settings", "WorldSphereMod/Rotate", "sprite_settings", "sprite_settings_description", "sprite_settings_window", new List<ButtonData>()
             {
-               new ButtonData("Sprites Rotate To Camera", "will sprites rotate to the camera?", "WorldSphereMod/Rotate", Core.savedSettings.RotateStuffToCamera, ToggleRotations),
-               new ButtonData("Advanced Rotations", "sprites will rotate to the camera in a less buggy, but more expensive method!", "WorldSphereMod/Rotate", Core.savedSettings.RotateStuffToCameraAdvanced, ToggleAdvancedRotations)
+               new ButtonData("sprites_rotate_to_camera", "sprites_rotate_to_camera_description", "WorldSphereMod/Rotate", Core.savedSettings.RotateStuffToCamera, ToggleRotations),
+               new ButtonData("advanced_rotations", "advanced_rotations_description", "WorldSphereMod/Rotate", Core.savedSettings.RotateStuffToCameraAdvanced, ToggleAdvancedRotations)
             }
             );
-            GenerateSlider("Building Size", 0.1f, 5f, Core.savedSettings.BuildingSize, (float val) => { Core.savedSettings.BuildingSize = val; Core.SaveSettings(); }, "Sprite Settings");
-            CreateWindowButton("Camera Settings", "WorldSphereMod/Camera", "Camera Settings", "Settings for the 3D Camera", "", new List<ButtonData>()
+            GenerateSlider("building_size", 0.1f, 5f, Core.savedSettings.BuildingSize, (float val) => { Core.savedSettings.BuildingSize = val; Core.SaveSettings(); }, "Sprite Settings");
+            CreateWindowButton("Camera Settings", "WorldSphereMod/Camera", "camera_settings", "camera_settings_description", "camera_settings_window", new List<ButtonData>()
             {
-                new ButtonData("Inverted Camera", "if true, the horizontal and vertical movement of the camera will be swapped", "WorldSphereMod/Camera", Core.savedSettings.InvertedCameraMovement, ToggleCamera),
-                new ButtonData("First Person", "When Controlling a unit, you will be playing in First Person", "WorldSphereMod/Camera", Core.savedSettings.FirstPerson, ToggleFirtPerson)
+                new ButtonData("inverted_camera", "inverted_camera_description", "WorldSphereMod/Camera", Core.savedSettings.InvertedCameraMovement, ToggleCamera),
+                new ButtonData("first_person", "first_person_description", "WorldSphereMod/Camera", Core.savedSettings.FirstPerson, ToggleFirtPerson)
             });
-            GenerateSlider("Render Distance", 1, 20, Core.savedSettings.RenderRange, (float val) => { Core.savedSettings.RenderRange = val; Core.SaveSettings(); }, "Camera Settings");
-            CreateWindowButton("World Settings", "WorldSphereMod/World", "World Settings", "The Settings Of The World", "these will only apply when you regenerate the world!", new List<ButtonData>()
+            GenerateSlider("render_distance", 1, 20, Core.savedSettings.RenderRange, (float val) => { Core.savedSettings.RenderRange = val; Core.SaveSettings(); }, "Camera Settings");
+            CreateWindowButton("World Settings", "WorldSphereMod/World", "world_settings", "world_settings_description", "world_settings_window", new List<ButtonData>()
             {
-                new ButtonData("CylindricalShape", "Makes the World a Cylinder", "WorldSphereMod/Round", Core.savedSettings.CurrentShape == 0, SetShape, false),
-                new ButtonData("FlatShape", "Makes the World Flat", "WorldSphereMod/Flat", Core.savedSettings.CurrentShape == 1, SetShape, false)
+                new ButtonData("cylindrical_shape", "cylindrical_shape_description", "WorldSphereMod/Round", Core.savedSettings.CurrentShape == 0, SetShape, false),
+                new ButtonData("flat_shape", "flat_shape_description", "WorldSphereMod/Flat", Core.savedSettings.CurrentShape == 1, SetShape, false)
             });
-            GenerateSlider("Tile Length Multiplier", 1, 10, Core.savedSettings.TileHeight, (float x) => { Core.savedSettings.TileHeight = x; Core.SaveSettings(); }, "World Settings");
+            GenerateSlider("tile_length_multiplier", 1, 10, Core.savedSettings.TileHeight, (float x) => { Core.savedSettings.TileHeight = x; Core.SaveSettings(); }, "World Settings");
         }
         static Dictionary<string, int> WorldShapes = new Dictionary<string, int>()
         {
@@ -190,8 +190,6 @@ namespace WorldSphereMod.UI
         }
         static void CreateButton(string ID, string IconPath, string name, string Description, UnityAction Action)
         {
-            LM.AddToCurrentLocale(name.Underscore(), name);
-            LM.AddToCurrentLocale($"{name.Underscore()}_description", Description);
             PowerButton button = PowerButtonCreator.CreateSimpleButton(ID, Action, Resources.Load<Sprite>(IconPath));
             PowerButtonCreator.AddButtonToTab(button, Tab);
         }
@@ -209,8 +207,6 @@ namespace WorldSphereMod.UI
                     PowerButtonSelector.instance.checkToggleIcons();
                 }
             });
-            LM.AddToCurrentLocale(name.Underscore(), name);
-            LM.AddToCurrentLocale($"{name.Underscore()}_description", Description);
             PlayerConfig.dict.Add(ID, new PlayerOptionData(ID));
             var Button = PowerButtonCreator.CreateToggleButton(
                 ID,
@@ -219,12 +215,16 @@ namespace WorldSphereMod.UI
                 default,
                 true
             );
+            AssetManager.options_library.add(new OptionAsset()
+            {
+                id = ID
+            });
             PowerButtonCreator.AddButtonToTab(Button, Tab);
             if (!Enabled)
             {
                 PlayerConfig.dict[ID].boolVal = false;
-                Button.checkToggleIcon();
             }
+            PowerButtonSelector.instance.checkToggleIcons();
         }
         #endregion
       }
@@ -235,7 +235,7 @@ namespace WorldSphereMod.UI
         {
             ScrollWindow window;
             GameObject content;
-            window = Windows.CreateNewWindow(id, title);
+            window = WindowCreator.CreateEmptyWindow(id, title);
 
             GameObject scrollView = GameObject.Find($"/Canvas Container Main/Canvas - Windows/windows/{window.name}/Background/Scroll View");
             content = GameObject.Find($"/Canvas Container Main/Canvas - Windows/windows/{window.name}/Background/Scroll View/Viewport/Content");
@@ -290,7 +290,7 @@ namespace WorldSphereMod.UI
             value2.boolVal = true;
             if (value2.boolVal && godPower2.map_modes_switch)
             {
-                AssetManager.powers.disableAllOtherMapModes(pPower);
+                PowerLibrary.disableAllOtherMapModes(pPower);
             }
 
             PlayerConfig.saveData();
@@ -311,9 +311,11 @@ namespace WorldSphereMod.UI
                 {
                     power.toggle_action = (PowerToggleAction)System.Delegate.Combine(power.toggle_action, new PowerToggleAction(toggleOption));
                 }
-                LM.AddToCurrentLocale(power.name.Underscore(), power.name);
-                LM.AddToCurrentLocale($"{power.name.Underscore()}_description", data.Description);
                 PlayerConfig.dict.Add(data.Name, new PlayerOptionData(data.Name));
+                AssetManager.options_library.add(new OptionAsset()
+                {
+                    id = data.Name
+                });
                 PowerButton activeButton = PowerButtonCreator.CreateToggleButton(
                     $"{data.Name}",
                     Resources.Load<Sprite>(data.IconPath),

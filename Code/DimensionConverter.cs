@@ -108,6 +108,16 @@ namespace WorldSphereMod
             transform.position = v.ConvertTo3D();
             transform.rotation = Tools.GetRotation(v.AsIntClamped());
         }
+        public static void ToShadow(this Transform transform, Vector3 v)
+        {
+            if (!Core.IsWorld3D)
+            {
+                transform.position = v;
+                return;
+            }
+            transform.position = Tools.To3DTileHeight(v, 0.1f);
+            transform.rotation = Tools.GetRotation(v.AsIntClamped());
+        }
         #endregion
         #region special
         public static void ToFire(this Transform transform, Vector3 v)

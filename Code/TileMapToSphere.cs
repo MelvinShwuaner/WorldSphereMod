@@ -29,7 +29,7 @@ namespace WorldSphereMod.TileMapToSphere
             Core.Sphere.GetCamerRange(out int Min, out int Max);
             Min /= 8;
             Max /= 8;
-            for (int i = Min; i < Max; i++)
+            for (int i = Min; i <= Max; i++)
             {
                 int I = (int)Tools.MathStuff.Wrap(CameraX, i, ZoneCamera._zone_manager.zones_total_x);
                 for(int j = 0; j < ZoneCamera._zone_manager.zones_total_y; j++)
@@ -39,7 +39,7 @@ namespace WorldSphereMod.TileMapToSphere
                     {
                         continue;
                     }
-                    ZoneCamera.zones.Add(tZone);
+                    ZoneCamera._visible_zones.Add(tZone);
                     tZone.visible = true;
                     if (i == (Min+Max)/2 && j == ZoneCamera._zone_manager.zones_total_y / 2)
                     {
@@ -237,9 +237,9 @@ namespace WorldSphereMod.TileMapToSphere
             {
                 return;
             }
-            for (int iZone = 0; iZone < World.world.zone_camera.zones.Count; iZone++)
+            for (int iZone = 0; iZone < World.world.zone_camera._visible_zones.Count; iZone++)
             {
-                TileZone tZone2 = World.world.zone_camera.zones[iZone];
+                TileZone tZone2 = World.world.zone_camera._visible_zones[iZone];
                 checkZoneToRender(tZone2);
             }
             Finish();
@@ -372,6 +372,33 @@ namespace WorldSphereMod.TileMapToSphere
                 Matcher.RemoveInstruction();
                 Matcher.Insert(new CodeInstruction(OpCodes.Callvirt, SetPixel));
             }
+            return Matcher.Instructions();
+        }
+        //why maxim
+        public static IEnumerable<CodeInstruction> ZoneLayerTranspiler(IEnumerable<CodeInstruction> instructions)
+        {
+            CodeMatcher Matcher = new CodeMatcher(instructions);
+            Matcher.MatchForward(false, FindPixels);
+            Matcher.RemoveInstruction();
+            Matcher.Insert(new CodeInstruction(OpCodes.Callvirt, GetPixel));
+            Matcher.Advance(-1);
+            CodeInstruction instruct = Matcher.Instruction;
+            Matcher.Insert(new CodeInstruction(OpCodes.Ldsfld, Pixels));
+            Tools.MoveLabels(instruct, Matcher.Instruction);
+            while (Matcher.FindNext(FindStelem))
+            {
+                Matcher.RemoveInstruction();
+                Matcher.Insert(new CodeInstruction(OpCodes.Callvirt, SetPixel));
+            }
+            return Matcher.Instructions();
+        }
+        //why the fuck maxim
+        public static IEnumerable<CodeInstruction> AVerySpecificTranspiler(IEnumerable<CodeInstruction> instructions)
+        {
+            CodeMatcher Matcher = new CodeMatcher(instructions);
+            Matcher.MatchForward(false, new CodeMatch(OpCodes.Ldelem));
+            Matcher.RemoveInstruction();
+            Matcher.Insert(new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(PixelArray), "get_Item")));
             return Matcher.Instructions();
         }
         [HarmonyPatch(typeof(MapLayer), nameof(MapLayer.clear))]

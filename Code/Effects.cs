@@ -301,7 +301,7 @@ namespace WorldSphereMod.Effects
                     DestroyEffect(tList[i]);
                 }
                 tList.Clear();
-                __instance.activeIndex = 0;
+                __instance._active_index = 0;
                 return false;
             }
             return true;

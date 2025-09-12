@@ -72,6 +72,9 @@ namespace WorldSphereMod
             {
                 CameraManager.OriginalCamera.GetComponent<SleekRenderPostProcess>().settings.bloomEnabled = AssetManager.options_library.getSavedBool(pAsset.id);
             };
+            Constants.PerpBuildings.Add("stockpile_acidproof", true);
+            Constants.PerpBuildings.Add("stockpile_fireproof", true);
+            Constants.PerpBuildings.Add("stockpile", true);
         }
         // load the textures after mods are loaded incase some mods add new world tiles
         public static void PostInit()
@@ -143,8 +146,11 @@ namespace WorldSphereMod
             Patcher.Transpile(Method(typeof(UnitLayer), nameof(UnitLayer.UpdateDirty)), MapLayerTranspiler);
             Patcher.Transpile(Method(typeof(WorldLayerEdges), nameof(WorldLayerEdges.redraw)), MapLayerTranspiler);
             Patcher.Transpile(Method(typeof(WorldLayerEdges), nameof(WorldLayerEdges.redrawTile)), MapLayerTranspiler);
-            Patcher.Transpile(Method(typeof(ZoneCalculator), nameof(ZoneCalculator.applyMetaColorsToZone)), MapLayerTranspiler);
-            Patcher.Transpile(Method(typeof(ZoneCalculator), nameof(ZoneCalculator.colorZone)), MapLayerTranspiler);
+            Patcher.Transpile(Method(typeof(ZoneCalculator), nameof(ZoneCalculator.applyMetaColorsToZone)), AddLayers.ZoneLayerTranspiler);
+            Patcher.Transpile(Method(typeof(ZoneCalculator), nameof(ZoneCalculator.colorZone)), AddLayers.ZoneLayerTranspiler);
+            Patcher.Transpile(Method(typeof(ZoneCalculator), nameof(ZoneCalculator.colorZone)), AddLayers.AVerySpecificTranspiler);
+            Patcher.Transpile(Method(typeof(ZoneCalculator), nameof(ZoneCalculator.applyMetaColorsToZoneFull)), AddLayers.ZoneLayerTranspiler);
+            Patcher.Transpile(Method(typeof(ZoneCalculator), nameof(ZoneCalculator.applyMetaColorsToZoneFull)), AddLayers.AVerySpecificTranspiler);
 
             Patcher.Transpile(Method(typeof(Actor), nameof(Actor.updateMovement)), Move3D.Transpiler);
             Patcher.Transpile(Method(typeof(Actor), nameof(Actor.tryToAttack)), Move3D.Transpiler);
@@ -164,9 +170,9 @@ namespace WorldSphereMod
             DimensionConverter.ConvertQuantum(Method(typeof(Santa), nameof(Santa.updatePosition)), DimensionConverter.YToZ);
             DimensionConverter.ConvertQuantum(Method(typeof(HeatRayEffect), nameof(HeatRayEffect.play)), DimensionConverter.ToQuantum);
 
-            DimensionConverter.ConvertQuantum(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawShadowsBuildings)), DimensionConverter.ToQuantumNonUpright);
+            DimensionConverter.ConvertQuantum(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawShadowsBuildings)), DimensionConverter.ToShadow);
             DimensionConverter.ConvertQuantum(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawFires)), DimensionConverter.ToFire);
-            DimensionConverter.ConvertQuantum(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawShadowsUnit)), DimensionConverter.ToQuantumNonUpright);
+            DimensionConverter.ConvertQuantum(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawShadowsUnit)), DimensionConverter.ToShadow);
             DimensionConverter.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawUnitAttackRange)));
             DimensionConverter.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawUnitSize)));
             DimensionConverter.ConvertPositions(Method(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawUnitsAvatars)));
@@ -211,7 +217,11 @@ namespace WorldSphereMod
         // the layer between the Mod and the compound sphere
         public static class Sphere
         {
-            struct Shape
+            public static void AddShape(Shape shape)
+            {
+                Shapes.Add(shape);
+            }
+            public struct Shape
             {
                 public Shape(To2D to2d, To2DFast to2dfast, GetSphereTilePosition to3d, GetSphereTileRotation rot, Initiation init, GetCameraRange GetCameraRange, bool IsWrapped)
                 {
