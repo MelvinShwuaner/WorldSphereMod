@@ -1,10 +1,10 @@
 {
   "WorldSphereMod_cz": "立体世界模组",
   "A Mod that makes your game 3D! if the Icon is red, it means your computer does not support this mod._cz": "让游戏视角变为3D立体的模组。如果确认此模组版本适配游戏但仍然贴图为红，则说明电脑不支持3D视角",
-  //WorldSphereTab(LM.Get)
+  //WorldSphereTab
   "world_sphere_tab": "立体世界",
   "world_sphere_tab_desc": "让游戏视角变为3D立体!",
-  "world_sphere_tab_author": "制作：Melvin 汉化：半梦半醒",
+  "world_sphere_tab_author": "制作:Melvin  汉化:半梦半醒",
   "is_3d": "3D世界",
   "is_3d_description": "切换此开关，然后重新加载世界\n这样才能在平面和立体间切换",
   "sprite_settings": "贴图设置",
