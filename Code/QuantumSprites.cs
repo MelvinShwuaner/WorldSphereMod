@@ -162,7 +162,7 @@ namespace WorldSphereMod.QuantumSprites
                     }
                     else
                     {
-                        Obj.m_transform.rotation = Quaternion.identity;
+                        Obj.m_transform.rotation = Tools.GetRotation(pPosition.AsIntClamped());
                     }
                 }
                 else
