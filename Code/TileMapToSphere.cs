@@ -446,7 +446,7 @@ namespace WorldSphereMod.TileMapToSphere
         }
         [HarmonyPatch(typeof(MapLayer), nameof(MapLayer.updatePixels))]
         [HarmonyPrefix]
-        static bool DontUpdate()
+        static bool DontUpdate(MapLayer __instance)
         {
             return !Core.IsWorld3D;
         }

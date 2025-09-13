@@ -286,7 +286,25 @@ namespace WorldSphereMod.General
             return x1 - x2;
         }
     }
-
+    public class PreviewPatch
+    {
+        public static void Prefix()
+        {
+            World.world.world_layer.texture.SetPixels32(World.world.world_layer.pixels);
+            World.world.world_layer.texture.Apply();
+        }
+    }
+    [HarmonyPatch(typeof(Dragon), nameof(Dragon.create))]
+    class dragonfix
+    {
+        static void Postfix(Dragon __instance)
+        {
+            if (Core.IsWorld3D)
+            {
+                __instance.GetComponent<SpriteRenderer>().enabled = false;
+            }
+        }
+    }
     public static class FixCrabzilla {
         static List<SpriteRenderer> OriginalSprites = new List<SpriteRenderer>();
         static List<SpriteRenderer> Sprites = new List<SpriteRenderer>();
@@ -314,17 +332,6 @@ namespace WorldSphereMod.General
                 }
             }
 
-        }
-        [HarmonyPatch(typeof(Dragon), nameof(Dragon.create))]
-        class dragonfix
-        {
-            static void Postfix(Dragon __instance)
-            {
-                if (Core.IsWorld3D)
-                {
-                    __instance.GetComponent<SpriteRenderer>().enabled = false;
-                }
-            }
         }
         [HarmonyPatch(typeof(Actor), nameof(Actor.checkComponentListDispose))]
         [HarmonyPostfix]
