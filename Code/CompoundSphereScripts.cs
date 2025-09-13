@@ -19,11 +19,11 @@ namespace WorldSphereMod
         public static Vector3 SphereTileAddedColor(SphereTile Tile) {
             return (Vector4)Core.Sphere.GetAddedColor(Tile.Index());
         }
-        public static Quaternion CylindricalRotation(SphereTile SphereTile)
+        public static Quaternion CylindricalRotation(Vector2 Pos)
         {
-            return Quaternion.AngleAxis(Tools.MathStuff.Angle(SphereTile.Position.y, SphereTile.Position.x), Vector3.forward) * ConstRot;
+            return Quaternion.AngleAxis(Tools.MathStuff.Angle(Pos.y, Pos.x), Vector3.forward) * ConstRot;
         }
-        public static Quaternion FlatRotation(SphereTile SphereTile)
+        public static Quaternion FlatRotation(Vector2 Pos)
         {
             return ConstRot* ToUpright;
         }

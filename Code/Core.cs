@@ -24,7 +24,7 @@ namespace WorldSphereMod
     public static class Core
     {
         public static SavedSettings savedSettings = new SavedSettings();
-        public static string SettingsVersion = "1.2";
+        public static string SettingsVersion = "1.3";
 
         public static Harmony Patcher;
         public static void SaveSettings()
@@ -64,17 +64,10 @@ namespace WorldSphereMod
         }
         static void DoSomeOtherStuff()
         {
-            AssetManager.options_library.get("vignette").action = delegate (OptionAsset pAsset)
-            {
-                CameraManager.OriginalCamera.GetComponent<SleekRenderPostProcess>().settings.vignetteEnabled = AssetManager.options_library.getSavedBool(pAsset.id);
-            };
-            AssetManager.options_library.get("bloom").action = delegate (OptionAsset pAsset)
-            {
-                CameraManager.OriginalCamera.GetComponent<SleekRenderPostProcess>().settings.bloomEnabled = AssetManager.options_library.getSavedBool(pAsset.id);
-            };
             Constants.PerpBuildings.Add("stockpile_acidproof", true);
             Constants.PerpBuildings.Add("stockpile_fireproof", true);
             Constants.PerpBuildings.Add("stockpile", true);
+            Constants.PerpProjectiles.Add("arrow", true);
         }
         // load the textures after mods are loaded incase some mods add new world tiles
         public static void PostInit()
@@ -221,9 +214,14 @@ namespace WorldSphereMod
             {
                 Shapes.Add(shape);
             }
+            public static Quaternion GetRotation(Vector2 position)
+            {
+                return CurrentShape.tileRotation(position);
+            }
+            public delegate Quaternion GetRot(Vector2 Pos);
             public struct Shape
             {
-                public Shape(To2D to2d, To2DFast to2dfast, GetSphereTilePosition to3d, GetSphereTileRotation rot, Initiation init, GetCameraRange GetCameraRange, bool IsWrapped)
+                public Shape(To2D to2d, To2DFast to2dfast, GetSphereTilePosition to3d, GetRot rot, Initiation init, GetCameraRange GetCameraRange, bool IsWrapped)
                 {
                     this.To2D = to2d;
                     this.To2DFast = to2dfast;
@@ -237,7 +235,7 @@ namespace WorldSphereMod
                 public To2D To2D;
                 public To2DFast To2DFast;
                 public GetSphereTilePosition To3D;
-                public GetSphereTileRotation tileRotation;
+                public GetRot tileRotation;
                 public Initiation Inititation;
                 public GetCameraRange GetCameraRange;
             }
@@ -398,7 +396,7 @@ namespace WorldSphereMod
                 SphereManagerConfig = new SphereManagerSettings(
                     CurrentShape.Inititation,
                     CurrentShape.To3D,
-                    CurrentShape.tileRotation,
+                    delegate(SphereTile tile) { return CurrentShape.tileRotation(tile.Position); },
                     SphereTileScale,
                     SphereTileColor,
                     SphereTileTexture,

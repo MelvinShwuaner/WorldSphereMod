@@ -146,6 +146,36 @@ namespace WorldSphereMod.QuantumSprites
                 sprite.m_transform.localPosition = Tools.To3DTileHeight(pPosition, 0.1f);
             }
         }
+        public static void SetProjectile(this GroupSpriteObject Obj, ref Vector3 pPosition, Projectile Projectile)
+        {
+            if (Obj._last_pos_v3.x != pPosition.x || Obj._last_pos_v3.y != pPosition.y || Obj._last_pos_v3.z != pPosition.z)
+            {
+                Obj._last_pos_v2 = pPosition;
+                Obj._last_pos_v3 = pPosition;
+                if (Core.IsWorld3D)
+                {
+                    Obj.m_transform.localPosition = Obj._last_pos_v3.To3DTileHeight(true);
+                    if (!Constants.PerpProjectiles.ContainsKey(Projectile.asset.id))
+                    {
+                        Obj.m_transform.rotation = Tools.GetUprightRotation(pPosition.AsIntClamped());
+                        RotateToCamera(Obj.m_transform);
+                    }
+                    else
+                    {
+                        Obj.m_transform.rotation = Quaternion.identity;
+                    }
+                }
+                else
+                {
+                    Obj.m_transform.localPosition = Obj._last_pos_v3;
+                }
+            }
+
+            if (Obj._last_scale_v2.x != Projectile.getCurrentScale())
+            {
+                Obj.setScale(Projectile.getCurrentScale());
+            }
+        }
     }
     public class QuantumSpritePatches
     {
@@ -331,6 +361,10 @@ namespace WorldSphereMod.QuantumSprites
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {
             CodeMatcher Matcher = new CodeMatcher(instructions, generator);
+            Matcher.MatchForward(false, new CodeMatch(OpCodes.Callvirt, AccessTools.Method(typeof(Projectile), nameof(Projectile.getCurrentScale))));
+            Matcher.RemoveInstruction();
+            Matcher.RemoveInstruction();
+            Matcher.Insert(new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(Manager), nameof(Manager.SetProjectile))));
             Matcher.MatchForward(false, new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(Transform), "set_rotation")));
             Matcher.RemoveInstruction();
             Matcher.Insert(new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(Tools), nameof(Tools.AddRotation))));

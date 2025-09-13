@@ -30,6 +30,7 @@ namespace WorldSphereMod
         };
         public static readonly ConcurrentDictionary<string, bool> PerpActors = new ConcurrentDictionary<string, bool>();
         public static readonly ConcurrentDictionary<string, bool> PerpBuildings = new ConcurrentDictionary<string, bool>();
+        public static readonly ConcurrentDictionary<string, bool> PerpProjectiles = new ConcurrentDictionary<string, bool>();
         public const int SpecialHeight = 4;
         public static float YConst = 1f / (81 / Core.Sphere.HeightMult);
         public static Vector3 HighlightedZoneSize = new Vector3(1, 1 + (10 * YConst), 1);

@@ -127,7 +127,8 @@ namespace WorldSphereMod.UI
             CreateWindowButton("Camera Settings", "WorldSphereMod/Camera", "camera_settings", "camera_settings_description", "camera_settings_window", new List<ButtonData>()
             {
                 new ButtonData("inverted_camera", "inverted_camera_description", "WorldSphereMod/Camera", Core.savedSettings.InvertedCameraMovement, ToggleCamera),
-                new ButtonData("first_person", "first_person_description", "WorldSphereMod/Camera", Core.savedSettings.FirstPerson, ToggleFirtPerson)
+                new ButtonData("first_person", "first_person_description", "WorldSphereMod/Camera", Core.savedSettings.FirstPerson, ToggleFirtPerson),
+                new ButtonData("camera_rotates_with_world", "camera_rotates_with_world_description", "WorldSphereMod/Camera", Core.savedSettings.CameraRotatesWithWorld, ToggleRotateToWorld)
             });
             GenerateSlider("render_distance", 1, 20, Core.savedSettings.RenderRange, (float val) => { Core.savedSettings.RenderRange = val; Core.SaveSettings(); }, "Camera Settings");
             CreateWindowButton("World Settings", "WorldSphereMod/World", "world_settings", "world_settings_description", "world_settings_window", new List<ButtonData>()
@@ -174,6 +175,11 @@ namespace WorldSphereMod.UI
         static void ToggleFirtPerson(string _)
         {
             Core.savedSettings.FirstPerson = !Core.savedSettings.FirstPerson;
+            Core.SaveSettings();
+        }
+        static void ToggleRotateToWorld(string _)
+        {
+            Core.savedSettings.CameraRotatesWithWorld = !Core.savedSettings.CameraRotatesWithWorld;
             Core.SaveSettings();
         }
         static void ToggleCamera(string _)

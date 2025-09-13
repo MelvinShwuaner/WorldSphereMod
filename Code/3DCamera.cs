@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using SleekRender;
 using System.Collections.Generic;
 using System.Reflection.Emit;
 using UnityEngine;
@@ -20,20 +21,26 @@ namespace WorldSphereMod.NewCamera
             return true;
         }
     }
-    [HarmonyPatch(typeof(MoveCamera), nameof(MoveCamera.updateVisibleBounds))]
+    [HarmonyPatch(typeof(MoveCamera), nameof(MoveCamera.isWithinCameraViewNotPowerBar))]
     class Bounds
     {
-        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        public static bool Prefix(ref bool __result, Vector2 pPos)
         {
-            CodeMatcher Matcher = new CodeMatcher(instructions);
-            Matcher.MatchForward(false, new CodeMatch(OpCodes.Ldfld, AccessTools.Field(typeof(MoveCamera), nameof(MoveCamera.main_camera))));
-            Matcher.RemoveInstruction();
-            Matcher.Insert(new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Bounds), nameof(Bounds.GetCamera))));
-            return Matcher.Instructions();
+            if (Core.IsWorld3D)
+            {
+                __result = IsWithinCameraView(pPos.To3DTileHeight(10));
+                return false;
+            }
+            return true;
         }
-        static Camera GetCamera(MoveCamera Camera)
+        public static bool IsWithinCameraView(Vector3 Pos)
         {
-            return World.world.camera;
+            Vector3 ScreenPos = MainCamera.WorldToViewportPoint(Pos);
+            if(ScreenPos.x > 1 || ScreenPos.x < 0 || ScreenPos.y > 1 || ScreenPos.y < 0 || ScreenPos.z < 0)
+            {
+                return false;
+            }
+            return true;
         }
     }
     [HarmonyPatch(typeof(Camera), "set_orthographicSize")]
@@ -75,6 +82,7 @@ namespace WorldSphereMod.NewCamera
             MainCamera.transparencySortMode = TransparencySortMode.Default;
             Manager = MoveCamera.instance;
             OriginalCamera = Manager.main_camera;
+            Tools.CopyComponent(OriginalCamera.GetComponent<SleekRenderPostProcess>(), MainCamera.gameObject);
             RotateCamera.UpdateRotation(Vector2.zero);
         }
         public static MoveCamera Manager;
@@ -89,6 +97,7 @@ namespace WorldSphereMod.NewCamera
                 return;
             }
             MainCamera.transform.position = Core.Sphere.SpherePos(Position.x, Position.y, Height);
+            MainCamera.transform.rotation = (Core.savedSettings.CameraRotatesWithWorld ? Core.Sphere.GetRotation(MainCamera.transform.position) * Constants.ToUpright : Quaternion.identity) * Quaternion.Euler(RotateCamera.Rotation);
             if (ControllableUnit._unit_main != null && Core.savedSettings.FirstPerson)
             {
                 Manager._target_zoom = ControllableUnit._unit_main.position_height + (ControllableUnit._unit_main.current_scale.y*10) + CameraTile.TileHeight();
@@ -115,18 +124,30 @@ namespace WorldSphereMod.NewCamera
     {
         public static Vector2 GetMovementVector(float Speed, bool Vertical)
         {
-            Vector3 vector;
+            Vector2 vector = new Vector2();
             if (Core.savedSettings.InvertedCameraMovement ? !Vertical : Vertical)
             {
-                vector = -transform.forward * Speed;
-                vector.x *= RotateCamera.InvertMult;
+                float magnitude = ((Vector2)transform.right).magnitude;
+                if (transform.up.z < 0)
+                {
+                    magnitude *= -1;
+                }
+                vector.y = -magnitude * Speed;
+                vector.x = transform.right.z * Speed;
+
             }
             else
             {
-                vector = transform.right * Speed;
-                vector.x *= RotateCamera.InvertMult;
+                float magnitude = ((Vector2)transform.right).magnitude;
+                if(transform.up.z < 0)
+                {
+                    magnitude *= -1;
+                }
+                vector.x = magnitude * Speed;
+                vector.y = transform.right.z * Speed;
             }
-            return new Vector2(vector.z * XSpeed, vector.x);
+            
+            return new Vector2(vector.y * XSpeed, vector.x);
         }
         public static float XSpeed
         {
@@ -215,13 +236,12 @@ namespace WorldSphereMod.NewCamera
         }
         public static float InvertMult
         {
-            get { return Rotation.x < 90 || Rotation.x > 270 ? 1 : -1; }
+            get { return MainCamera.transform.eulerAngles.x < 90 || MainCamera.transform.eulerAngles.x > 270 ? 1 : -1; }
         }
         public static void UpdateRotation(Vector2 Change)
         {
             Rotation.x = Tools.MathStuff.Wrap(Rotation.x, -Change.y, 360);
             Rotation.y = Rotation.y + (Change.x * InvertMult);
-            transform.rotation = Quaternion.Euler(Rotation);
         }
         //i dont know how this fucking works and im too scared to touch it
         static void UpdatePanning(MoveCamera Cam)

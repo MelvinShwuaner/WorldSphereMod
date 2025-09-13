@@ -408,8 +408,7 @@ namespace WorldSphereMod.General
         {
             if (Core.IsWorld3D)
             {
-                Vector2 tViewportPosition = World.world.move_camera.main_camera.WorldToViewportPoint(Tools.To3DTileHeight(pVec, 10));
-                __result = new Vector2(tViewportPosition.x * __instance._manager.canvas_rect.sizeDelta.x - __instance._manager.canvas_rect.sizeDelta.x * 0.5f, tViewportPosition.y * __instance._manager.canvas_rect.sizeDelta.y - __instance._manager.canvas_rect.sizeDelta.y * 0.5f);
+                __result = World.world.move_camera.main_camera.WorldToScreenPoint(Tools.To3DTileHeight(pVec, 10));
                 return false;
             }
             return true;
