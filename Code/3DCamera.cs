@@ -2,6 +2,7 @@
 using SleekRender;
 using System.Collections.Generic;
 using System.Reflection.Emit;
+using System.Reflection.Metadata.Ecma335;
 using UnityEngine;
 using WorldSphereMod.General;
 using static WorldSphereMod.NewCamera.CameraManager;
@@ -41,6 +42,25 @@ namespace WorldSphereMod.NewCamera
                 return false;
             }
             return true;
+        }
+    }
+    [HarmonyPatch(typeof(WorldAgeEffects), nameof(WorldAgeEffects.fitTheCamera))]
+    public class AgeEffects
+    {
+        public static bool Prefix(WorldAgeEffects __instance)
+        {
+            if (Core.IsWorld3D)
+            {
+                FitCamera(__instance.transform);
+                return false;
+            }
+            return true;
+        }
+        public static void FitCamera(Transform Transform)
+        {
+            Transform.position = transform.TransformPoint(new Vector3(0, 0, 1));
+            Transform.rotation = transform.rotation;
+            Transform.localScale = new Vector3(2.2f, 2, 1);
         }
     }
     [HarmonyPatch(typeof(Camera), "set_orthographicSize")]

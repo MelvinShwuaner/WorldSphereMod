@@ -15,6 +15,16 @@ namespace WorldSphereMod
 {
     public static class Tools
     {
+        public static void ResetTexture(this Texture2D texture)
+        {
+            Color[] clearPixels = new Color[texture.width * texture.height];
+            for (int i = 0; i < clearPixels.Length; i++)
+            {
+                clearPixels[i] = Color.clear;
+            }
+            texture.SetPixels(clearPixels);
+            texture.Apply();
+        }
         public static T CopyComponent<T>(T original, GameObject destination) where T : Component
         {
             System.Type type = original.GetType();

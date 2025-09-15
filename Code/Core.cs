@@ -153,8 +153,9 @@ namespace WorldSphereMod
             Patcher.Transpile(Method(typeof(MusicBoxContainerTiles), nameof(MusicBoxContainerTiles.calculatePan)), Move3D.Transpiler);
 
             HarmonyMethod previewPatch = new HarmonyMethod(Method(typeof(PreviewPatch), nameof(PreviewPatch.Prefix)));
-            Patcher.Patch(AccessTools.Method(typeof(PreviewHelper), nameof(PreviewHelper.convertMapToTexture)), previewPatch);
-            Patcher.Patch(AccessTools.Method(typeof(PreviewHelper), nameof(PreviewHelper.getCurrentWorldPreview)), previewPatch);
+            HarmonyMethod previewPatchpostfix = new HarmonyMethod(Method(typeof(PreviewPatch), nameof(PreviewPatch.Postfix)));
+            Patcher.Patch(AccessTools.Method(typeof(PreviewHelper), nameof(PreviewHelper.convertMapToTexture)), previewPatch, previewPatchpostfix);
+            Patcher.Patch(AccessTools.Method(typeof(PreviewHelper), nameof(PreviewHelper.getCurrentWorldPreview)), previewPatch, previewPatchpostfix);
 
             Patcher.Transpile(Method(typeof(MoveCamera), nameof(MoveCamera.zoomToBounds)), MinZoomTranspiler.Transpiler);
             Patcher.Transpile(Method(typeof(MoveCamera), nameof(MoveCamera.updateMobileCamera)), MinZoomTranspiler.Transpiler);
@@ -193,6 +194,7 @@ namespace WorldSphereMod
         static void Do3DStuff()
         {
             World.world.heat_ray_fx.ray.transform.localPosition = Vector3.zero;
+            QuantumSpriteLibrary.light_areas.color = new Color(1, 1, 1, 0.5f);
             World.world.heat_ray_fx.ray.transform.eulerAngles = new Vector3(180, 0, 0);
         }
         public static void Become2D()
@@ -203,6 +205,7 @@ namespace WorldSphereMod
         }
         static void do2DStuff()
         {
+            QuantumSpriteLibrary.light_areas.color = new Color(1, 1, 1, 1f);
             World.world.heat_ray_fx.ray.transform.localPosition = new Vector3(0, 2000);
             World.world.heat_ray_fx.ray.transform.eulerAngles = Vector3.zero;
         }

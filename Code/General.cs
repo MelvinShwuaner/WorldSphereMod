@@ -292,6 +292,11 @@ namespace WorldSphereMod.General
         {
             World.world.world_layer.texture.SetPixels32(World.world.world_layer.pixels);
             World.world.world_layer.texture.Apply();
+        
+        }
+        public static void Postfix()
+        {
+            World.world.world_layer.texture.ResetTexture();
         }
     }
     [HarmonyPatch(typeof(Dragon), nameof(Dragon.create))]
