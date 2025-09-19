@@ -142,38 +142,40 @@ namespace WorldSphereMod.NewCamera
     }
     public class MovementEnhancement
     {
+        static bool UpsideDown => Vector3.Dot(transform.up, Vector3.up) < 0;
         public static Vector2 GetMovementVector(float Speed, bool Vertical)
         {
-            Vector2 vector = new Vector2();
-            if (Core.savedSettings.InvertedCameraMovement ? !Vertical : Vertical)
-            {
-                float magnitude = ((Vector2)transform.right).magnitude;
-                if (transform.up.z < 0)
-                {
-                    magnitude *= -1;
-                }
-                vector.y = -magnitude * Speed;
-                vector.x = transform.right.z * Speed;
+            Vector3 vector;
+            float yRotation = RotateCamera.Rotation.y;
 
+            float rad = yRotation * Mathf.Deg2Rad;
+
+            bool Inversed = Core.savedSettings.InvertedCameraMovement;
+            if (Core.savedSettings.CameraRotatesWithWorld)
+            {
+                Inversed = !Inversed;
+            }
+        
+            if (Inversed ? !Vertical : Vertical)
+            {
+                vector = new Vector3(Mathf.Sin(rad), 0, Mathf.Cos(rad)).normalized;
             }
             else
             {
-                float magnitude = ((Vector2)transform.right).magnitude;
-                if(transform.up.z < 0)
+                vector = new Vector3(Mathf.Cos(rad), 0, -Mathf.Sin(rad)).normalized;
+                if (Core.savedSettings.CameraRotatesWithWorld)
                 {
-                    magnitude *= -1;
+                    vector *= -1;
                 }
-                vector.x = magnitude * Speed;
-                vector.y = transform.right.z * Speed;
+              
             }
-            
-            return new Vector2(vector.y * XSpeed, vector.x);
+            return new Vector2(vector.x * XSpeed * Speed, vector.z * Speed);
         }
         public static float XSpeed
         {
             get
             {
-                return Core.Sphere.IsWrapped ? -0.5f : -1;
+                return Core.Sphere.IsWrapped ? 0.5f : 1;
             }
         }
         public static void Move(HotkeyAsset pAsset)
