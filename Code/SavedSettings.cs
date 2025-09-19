@@ -6,7 +6,7 @@ namespace WorldSphereMod
     {
         public string Version = "1.3";
         public bool Is3D = true;
-        public bool InvertedCameraMovement = true;
+        public bool InvertedCameraMovement = false;
         public bool RotateStuffToCamera = true;
         public bool RotateStuffToCameraAdvanced = true;
         public bool CameraRotatesWithWorld = true;
