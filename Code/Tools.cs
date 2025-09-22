@@ -11,10 +11,17 @@ using System.Collections.Concurrent;
 using WorldSphereMod.General;
 using System.Collections.Generic;
 using System.Linq;
+using static UnityEngine.UI.CanvasScaler;
 namespace WorldSphereMod
 {
     public static class Tools
     {
+        public static float PerlinNose(float x, float y, float width, float height, float Scale)
+        {
+            float tX = x / width;
+            float tY = y / height;
+            return Mathf.PerlinNoise(tX * Scale, tY * Scale) + 0.5f;
+        }
         public static void ResetTexture(this Texture2D texture)
         {
             Color[] clearPixels = new Color[texture.width * texture.height];
@@ -117,11 +124,7 @@ namespace WorldSphereMod
                 return 1;
             }
             float Dif = Mathf.Abs(tile.TileHeight() - Actor.current_tile.TileHeight());
-            if(Dif == 0)
-            {
-                return 1;
-            }
-            return TileHeightDiffSpeed / Dif;
+            return 1 - Mathf.Clamp(Dif / TileHeightDiffSpeed, 0, 0.9f);
         }
         public static WorldTile GetTile(Vector2Int Pos)
         {

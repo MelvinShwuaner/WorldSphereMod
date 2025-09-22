@@ -12,7 +12,7 @@ namespace WorldSphereMod
         //square root of 1/2
         public const float HalfRoot = 0.70710678118f;
         //idk
-        public const float TileHeightDiffSpeed = 0.8f;
+        public const float TileHeightDiffSpeed = 4f;
 
         public static readonly Quaternion ConstRot = Quaternion.Euler(0, 90, 180);
         public static readonly Quaternion ToUpright = Quaternion.Euler(90, 0, 0);
@@ -32,8 +32,8 @@ namespace WorldSphereMod
         public static readonly ConcurrentDictionary<string, bool> PerpBuildings = new ConcurrentDictionary<string, bool>();
         public static readonly ConcurrentDictionary<string, bool> PerpProjectiles = new ConcurrentDictionary<string, bool>();
         public const int SpecialHeight = 4;
-        public static float YConst = 1f / (81 / Core.Sphere.HeightMult);
-        public static Vector3 HighlightedZoneSize = new Vector3(1, 1 + (10 * YConst), 1);
+        public static float YConst => 1f / (81 / (Core.Sphere.HeightMult));
+        public static Vector3 HighlightedZoneSize => new Vector3(1, 1 + (10 * YConst), 1);
         public static Vector3 Zero = Vector3.zero;
     }
 }

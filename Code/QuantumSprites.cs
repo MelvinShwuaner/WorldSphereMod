@@ -409,7 +409,8 @@ namespace WorldSphereMod.QuantumSprites
             }
             if (pAsset.id == "highlight_cursor_zones")
             {
-                __result.setScale(ref Constants.HighlightedZoneSize);
+                Vector3 size = Constants.HighlightedZoneSize;
+                __result.setScale(ref size);
             }
         }
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)

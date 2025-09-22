@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using WorldSphereMod.NewCamera;
+using static UnityEngine.UI.CanvasScaler;
 using static WorldSphereMod.Constants;
 namespace WorldSphereMod
 {
@@ -14,7 +15,11 @@ namespace WorldSphereMod
         public static Vector3 SphereTileScale(SphereTile Tile)
         {
             float Height = Tools.TrueHeight(Tile.SphereToWorld().GetHeight(), Tile.SphereToWorld().main_type.render_z);
-            return new Vector3(1, 1+(Height*YConst), Height*Core.Sphere.HeightMult);
+            if (Core.Sphere.PerlinNoise)
+            {
+                Height *= Tools.PerlinNose(Tile.X, Tile.Y, Tile.Manager.Rows, Tile.Manager.Cols, 20);
+            }
+            return new Vector3(1, 1+(Core.Sphere.IsWrapped ? Height*YConst : 0), Height*Core.Sphere.HeightMult);
         }
         public static Vector3 SphereTileAddedColor(SphereTile Tile) {
             return (Vector4)Core.Sphere.GetAddedColor(Tile.Index());

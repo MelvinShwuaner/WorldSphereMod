@@ -167,9 +167,10 @@ namespace WorldSphereMod.NewCamera
                 {
                     vector *= -1;
                 }
+                vector.x *= RotateCamera.InvertMult;
               
             }
-            return new Vector2(vector.x * XSpeed * Speed, vector.z * Speed);
+            return new Vector2(vector.x * XSpeed * Speed, vector.z * Speed * RotateCamera.InvertMult);
         }
         public static float XSpeed
         {
@@ -258,7 +259,7 @@ namespace WorldSphereMod.NewCamera
         }
         public static float InvertMult
         {
-            get { return MainCamera.transform.eulerAngles.x < 90 || MainCamera.transform.eulerAngles.x > 270 ? 1 : -1; }
+            get { return Rotation.x < 90 || Rotation.x > 270 ? 1 : -1; }
         }
         public static void UpdateRotation(Vector2 Change)
         {

@@ -29,5 +29,7 @@
     "flat_shape_description": "Makes the World Flat",
     "tile_length_multiplier": "Tile Length Multiplier",
     "camera_rotates_with_world": "Camera Rotates With World",
-    "camera_rotates_with_world_description":  "use this if you are controlling a unit"
+    "camera_rotates_with_world_description": "use this if you are controlling a unit",
+    "perlin_noise":  "Perlin Noise",
+    "perlin_noise_description": "Will the Height of the world be affected by perlin noise?"
 }

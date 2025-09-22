@@ -24,7 +24,7 @@ namespace WorldSphereMod
     public static class Core
     {
         public static SavedSettings savedSettings = new SavedSettings();
-        public static string SettingsVersion = "1.3";
+        public static string SettingsVersion = "1.4";
 
         public static Harmony Patcher;
         public static void SaveSettings()
@@ -253,6 +253,7 @@ namespace WorldSphereMod
             public static Transform CenterCapsule => Manager.transform.GetChild(0);
             public static bool Exists => Manager != null;
             public static float HeightMult = 0;
+            public static bool PerlinNoise = true;
             #region Fancy stuff
             static SphereManager Manager;
             static Mesh CompoundSphereMesh;
@@ -279,6 +280,7 @@ namespace WorldSphereMod
             {
                 CurrentShape = Shapes[savedSettings.CurrentShape];
                 HeightMult = savedSettings.TileHeight;
+                PerlinNoise = Core.savedSettings.PerlinNoise;
                 CreateSettings();
                 int width = MapBox.width;
                 int height = MapBox.height;

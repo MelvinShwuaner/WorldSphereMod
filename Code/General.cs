@@ -336,7 +336,6 @@ namespace WorldSphereMod.General
                     Sprites.Add(newrenderer);
                 }
             }
-
         }
         [HarmonyPatch(typeof(Actor), nameof(Actor.checkComponentListDispose))]
         [HarmonyPostfix]

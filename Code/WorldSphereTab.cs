@@ -134,7 +134,8 @@ namespace WorldSphereMod.UI
             CreateWindowButton("World Settings", "WorldSphereMod/World", "world_settings", "world_settings_description", "world_settings_window", new List<ButtonData>()
             {
                 new ButtonData("cylindrical_shape", "cylindrical_shape_description", "WorldSphereMod/Round", Core.savedSettings.CurrentShape == 0, SetShape, false),
-                new ButtonData("flat_shape", "flat_shape_description", "WorldSphereMod/Flat", Core.savedSettings.CurrentShape == 1, SetShape, false)
+                new ButtonData("flat_shape", "flat_shape_description", "WorldSphereMod/Flat", Core.savedSettings.CurrentShape == 1, SetShape, false),
+                new ButtonData("perlin_noise", "perlin_noise_description", "WorldSphereMod/PerlinNoise", Core.savedSettings.PerlinNoise, PerlinNoise)
             });
             GenerateSlider("tile_length_multiplier", 1, 10, Core.savedSettings.TileHeight, (float x) => { Core.savedSettings.TileHeight = x; Core.SaveSettings(); }, "World Settings");
         }
@@ -143,6 +144,11 @@ namespace WorldSphereMod.UI
             { "cylindrical_shape", 0 },
             { "flat_shape", 1 }
         };
+        static void PerlinNoise(string ID)
+        {
+            Core.savedSettings.PerlinNoise = !Core.savedSettings.PerlinNoise;
+            Core.SaveSettings();
+        }
         static void SetShape(string ID)
         {
             Core.savedSettings.CurrentShape = WorldShapes[ID];
