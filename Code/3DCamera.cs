@@ -159,16 +159,27 @@ namespace WorldSphereMod.NewCamera
             if (Inversed ? !Vertical : Vertical)
             {
                 vector = new Vector3(Mathf.Sin(rad), 0, Mathf.Cos(rad)).normalized;
+                if (Core.savedSettings.CameraRotatesWithWorld)
+                {
+                    vector.z *= RotateCamera.InvertMult;
+                }
             }
             else
             {
                 vector = new Vector3(Mathf.Cos(rad), 0, -Mathf.Sin(rad)).normalized;
+                vector.x *= RotateCamera.InvertMult;
                 if (Core.savedSettings.CameraRotatesWithWorld)
                 {
                     vector *= -1;
                 }
+                else
+                {
+                    vector.z *= RotateCamera.InvertMult;
+                }
+            }
+            if(!Core.savedSettings.CameraRotatesWithWorld && !Core.Sphere.IsWrapped)
+            {
                 vector.x *= RotateCamera.InvertMult;
-              
             }
             return new Vector2(vector.x * XSpeed * Speed, vector.z * Speed * RotateCamera.InvertMult);
         }
