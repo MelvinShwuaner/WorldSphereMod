@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 2768116353
+CRC: 3585051224
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 365fefd44742d4f54b9f1bfedcbd4070
+    Hash: 715381e4ab0f0cd521931350c0869bd0
   TypeTreeHash:
     serializedVersion: 2
     Hash: 6ee55d1372e9665c4ae73fbe3eacdfc7
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 365fefd44742d4f54b9f1bfedcbd4070
+    Hash: 715381e4ab0f0cd521931350c0869bd0
 HashAppended: 0
 ClassTypes:
 - Class: 21
@@ -22,5 +22,6 @@ SerializeReferenceClassIdentifiers: []
 Assets:
 - Assets/WorldSphereMod/CompoundSphere.shader
 - Assets/WorldSphereMod/CompoundSphereMesh.asset
+- Assets/WorldSphereMod/SkyBox.mat
 - Assets/WorldSphereMod/CompoundSphereMaterial.mat
 Dependencies: []

@@ -128,7 +128,8 @@ namespace WorldSphereMod.UI
             {
                 new ButtonData("inverted_camera", "inverted_camera_description", "WorldSphereMod/Camera", Core.savedSettings.InvertedCameraMovement, ToggleCamera),
                 new ButtonData("first_person", "first_person_description", "WorldSphereMod/Camera", Core.savedSettings.FirstPerson, ToggleFirtPerson),
-                new ButtonData("camera_rotates_with_world", "camera_rotates_with_world_description", "WorldSphereMod/Camera", Core.savedSettings.CameraRotatesWithWorld, ToggleRotateToWorld)
+                new ButtonData("camera_rotates_with_world", "camera_rotates_with_world_description", "WorldSphereMod/Camera", Core.savedSettings.CameraRotatesWithWorld, ToggleRotateToWorld),
+                new ButtonData("upside_down_movement", "upside_down_movement_description", "WorldSphereMod/Camera", Core.savedSettings.UpsideDownMovement, UpsideDown)
             });
             GenerateSlider("render_distance", 1, 20, Core.savedSettings.RenderRange, (float val) => { Core.savedSettings.RenderRange = val; Core.SaveSettings(); }, "Camera Settings");
             CreateWindowButton("World Settings", "WorldSphereMod/World", "world_settings", "world_settings_description", "world_settings_window", new List<ButtonData>()
@@ -147,6 +148,11 @@ namespace WorldSphereMod.UI
         static void PerlinNoise(string ID)
         {
             Core.savedSettings.PerlinNoise = !Core.savedSettings.PerlinNoise;
+            Core.SaveSettings();
+        }
+        static void UpsideDown(string ID)
+        {
+            Core.savedSettings.UpsideDownMovement = !Core.savedSettings.UpsideDownMovement;
             Core.SaveSettings();
         }
         static void SetShape(string ID)

@@ -24,7 +24,7 @@ namespace WorldSphereMod
     public static class Core
     {
         public static SavedSettings savedSettings = new SavedSettings();
-        public static string SettingsVersion = "1.4";
+        public static string SettingsVersion = "1.5";
 
         public static Harmony Patcher;
         public static void SaveSettings()
@@ -59,7 +59,6 @@ namespace WorldSphereMod
             WorldSphereTab.Begin();
             DimensionConverter.Prepare();
             Patch();
-            CameraManager.Begin();
             DoSomeOtherStuff();
         }
         static void DoSomeOtherStuff()
@@ -394,6 +393,7 @@ namespace WorldSphereMod
                 WrappedAssetBundle ab = AssetBundleUtils.GetAssetBundle("worldsphere");
                 CompoundSphereMesh = ab.GetObject<Mesh>("assets/worldspheremod/compoundspheremesh.asset");
                 CompoundSphereMaterial = ab.GetObject<Material>("assets/worldspheremod/compoundspherematerial.mat");
+                CameraManager.Begin(ab.GetObject<Material>("assets/worldspheremod/SkyBox.mat").shader);
                 LibraryMaterials.instance._night_affected_colors.Add(CompoundSphereMaterial);
             }
             public static SphereTile GetTile(int X, int Y)

@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Reflection.Emit;
 using System.Reflection.Metadata.Ecma335;
 using UnityEngine;
+using UnityEngine.UI;
+using WorldBoxConsole;
 using WorldSphereMod.General;
 using static WorldSphereMod.NewCamera.CameraManager;
 namespace WorldSphereMod.NewCamera
@@ -94,15 +96,25 @@ namespace WorldSphereMod.NewCamera
             MainCamera.enabled = false;
             Manager.main_camera = OriginalCamera;
         }
+        public static Texture GetSkyboxTexture()
+        {
+            Sprite sprite = Resources.Load<Sprite>("WorldSphereMod/SkyBox");
+            return sprite.texture;
+        }
         //i want to rename this function to prepare but for some reason that breaks something. this is so fucking random i have no fucking idea how thats even possible
-        public static void Begin()
+        public static void Begin(Shader SkyBoxShader)
         {
             MainCamera = new GameObject("WorldSphere Camera").AddComponent<Camera>();
             MainCamera.gameObject.tag = "MainCamera";
             MainCamera.transparencySortMode = TransparencySortMode.Default;
+            
             Manager = MoveCamera.instance;
             OriginalCamera = Manager.main_camera;
             Tools.CopyComponent(OriginalCamera.GetComponent<SleekRenderPostProcess>(), MainCamera.gameObject);
+            MainCamera.clearFlags = CameraClearFlags.Skybox;
+            MainCamera.AddComponent<Skybox>();
+            MainCamera.GetComponent<Skybox>().material = new Material(SkyBoxShader);
+            MainCamera.GetComponent<Skybox>().material.mainTexture = GetSkyboxTexture();
             RotateCamera.UpdateRotation(Vector2.zero);
         }
         public static MoveCamera Manager;
@@ -181,14 +193,7 @@ namespace WorldSphereMod.NewCamera
             {
                 vector.x *= RotateCamera.InvertMult;
             }
-            return new Vector2(vector.x * XSpeed * Speed, vector.z * Speed * RotateCamera.InvertMult);
-        }
-        public static float XSpeed
-        {
-            get
-            {
-                return Core.Sphere.IsWrapped ? 0.5f : 1;
-            }
+            return new Vector2(vector.x * Speed, vector.z * Speed * RotateCamera.InvertMult);
         }
         public static void Move(HotkeyAsset pAsset)
         {
@@ -270,7 +275,7 @@ namespace WorldSphereMod.NewCamera
         }
         public static float InvertMult
         {
-            get { return Rotation.x < 90 || Rotation.x > 270 ? 1 : -1; }
+            get { return Rotation.x < 90 || Rotation.x > 270 || !Core.savedSettings.UpsideDownMovement ? 1 : -1; }
         }
         public static void UpdateRotation(Vector2 Change)
         {
