@@ -119,8 +119,8 @@ namespace WorldSphereMod.UI
             CreateToggleButton("Is3D", "WorldSphereMod/ModIcon", "is_3d", "is_3d_description", Toggle3D, Core.savedSettings.Is3D);
             CreateWindowButton("Sprite Settings", "WorldSphereMod/Rotate", "sprite_settings", "sprite_settings_description", "sprite_settings_window", new List<ButtonData>()
             {
-               new ButtonData("sprites_rotate_to_camera", "sprites_rotate_to_camera_description", "WorldSphereMod/Rotate", Core.savedSettings.RotateStuffToCamera, ToggleRotations),
-               new ButtonData("advanced_rotations", "advanced_rotations_description", "WorldSphereMod/Rotate", Core.savedSettings.RotateStuffToCameraAdvanced, ToggleAdvancedRotations)
+               ///new ButtonData("sprites_rotate_to_camera", "sprites_rotate_to_camera_description", "WorldSphereMod/Rotate", Core.savedSettings.RotateStuffToCamera, ToggleRotations),
+               new ButtonData("sprites_rotate_to_camera", "sprites_rotate_to_camera_description", "WorldSphereMod/Rotate", Core.savedSettings.RotateStuffToCamera, ToggleRotations)
             }
             );
             GenerateSlider("building_size", 0.1f, 5f, Core.savedSettings.BuildingSize, (float val) => { Core.savedSettings.BuildingSize = val; Core.SaveSettings(); }, "Sprite Settings");
@@ -177,11 +177,6 @@ namespace WorldSphereMod.UI
         static void ToggleRotations(string _)
         {
             Core.savedSettings.RotateStuffToCamera = !Core.savedSettings.RotateStuffToCamera;
-            Core.SaveSettings();
-        }
-        static void ToggleAdvancedRotations(string _)
-        {
-            Core.savedSettings.RotateStuffToCameraAdvanced = !Core.savedSettings.RotateStuffToCameraAdvanced;
             Core.SaveSettings();
         }
         static void ToggleFirtPerson(string _)

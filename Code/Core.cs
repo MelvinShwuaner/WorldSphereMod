@@ -17,7 +17,6 @@ using System;
 using WorldSphereMod.TileMapToSphere;
 using WorldSphereMod.UI;
 using WorldSphereMod.QuantumSprites;
-using SleekRender;
 using ai.behaviours;
 namespace WorldSphereMod
 {

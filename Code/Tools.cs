@@ -451,14 +451,7 @@ namespace WorldSphereMod
         {
             if (Core.savedSettings.RotateStuffToCamera && Upright)
             {
-                if (!Core.savedSettings.RotateStuffToCameraAdvanced)
-                {
-                    quaternion = Quaternion.LookRotation(CameraManager.MainCamera.transform.forward);
-                }
-                else
-                {
-                    quaternion = RotateToCameraAtTile(position.AsIntClamped());
-                }
+                quaternion = RotateToCameraAtTile(position.AsIntClamped());
                 return true;
             }
             quaternion = Upright ? GetUprightRotation(position.AsIntClamped()) : GetRotation(position.AsIntClamped());

@@ -12,8 +12,6 @@
   "sprite_settings_window": "比较消耗性能",
   "sprites_rotate_to_camera": "贴图跟随视角旋转",
   "sprites_rotate_to_camera_description": "让平面贴图始终正对视角，避免贴图不可见\n建筑无建模所以依此方法解决，如感觉眩晕可关",
-  "advanced_rotations": "高耗能视角旋转",
-  "advanced_rotations_description": "将以少报错多性能消耗的方式正对视角!\n需先开启“贴图跟随视角旋转”",
   "building_size": "建筑物尺寸",
   "camera_settings": "视角设置",
   "camera_settings_description": "在立体视角下的设置",

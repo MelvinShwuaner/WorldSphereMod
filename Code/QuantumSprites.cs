@@ -16,15 +16,8 @@ namespace WorldSphereMod.QuantumSprites
         {
             if (Core.savedSettings.RotateStuffToCamera)
             {
-                if (!Core.savedSettings.RotateStuffToCameraAdvanced)
-                {
-                    transform.rotation *= Quaternion.LookRotation(CameraManager.MainCamera.transform.forward);
-                }
-                else
-                {
-                    Vector3 pos = transform.position;
-                    transform.rotation *= Tools.RotateToCamera(ref pos);
-                }
+                Vector3 pos = transform.position;
+                transform.rotation *= Tools.RotateToCamera(ref pos);
             }
         }
         public static void ForceRotation(this GroupSpriteObject obj, ref Vector3 Rot)

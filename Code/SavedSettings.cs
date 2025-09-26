@@ -10,7 +10,6 @@ namespace WorldSphereMod
         public bool PerlinNoise = true;
         public bool UpsideDownMovement = true;
         public bool RotateStuffToCamera = true;
-        public bool RotateStuffToCameraAdvanced = true;
         public bool CameraRotatesWithWorld = true;
         public bool FirstPerson = true;
         public float RenderRange = 2;

@@ -473,6 +473,7 @@ namespace WorldSphereMod.TileMapToSphere
         }
         void Set(int I, Color32 Color)
         {
+            //somehow more laggy then updating tiles which havent changed
            // if (!Layer.pixels[I].EqualsColor(Color))
             {
                 Layer.pixels[I] = Color;

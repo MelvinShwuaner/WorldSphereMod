@@ -9,8 +9,6 @@
     "sprite_settings_window": "WARNING! THESE ARE EXPENSIVE",
     "sprites_rotate_to_camera": "Sprites Rotate To Camera",
     "sprites_rotate_to_camera_description": "will sprites rotate to the camera?",
-    "advanced_rotations": "Advanced Rotations",
-    "advanced_rotations_description": "sprites will rotate to the camera in a less buggy, but more expensive method!",
     "building_size": "Building Size",
     "camera_settings": "Camera Settings",
     "camera_settings_description": "Settings for the 3D Camera",
