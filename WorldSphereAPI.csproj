@@ -8,8 +8,11 @@
 
   <ItemGroup>
     <Compile Remove="WorldSphereMod\**" />
+    <Compile Remove="WorldSphereTester\**" />
     <EmbeddedResource Remove="WorldSphereMod\**" />
+    <EmbeddedResource Remove="WorldSphereTester\**" />
     <None Remove="WorldSphereMod\**" />
+    <None Remove="WorldSphereTester\**" />
   </ItemGroup>
 
   <ItemGroup>

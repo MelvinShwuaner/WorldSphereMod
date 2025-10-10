@@ -93,7 +93,7 @@ namespace WorldSphereMod.Effects
         }
         public static void UpdateSeperatedSprite(BaseEffect Effect, bool OnGround = true, float Height = 0)
         {
-            Effect.sprite_renderer.transform.position = ((Vector2)Effect.transform.position).To3D(Height + (OnGround ? Tools.GetTileHeightSmooth(Effect.transform.position) : 0));
+            Effect.sprite_renderer.transform.position = ((Vector2)Effect.transform.position).To3D((Height*Core.Sphere.HeightMult) + (OnGround ? Tools.GetTileHeightSmooth(Effect.transform.position) : 0));
             Effect.sprite_renderer.transform.localScale = Effect.transform.localScale;
         }
         public static void UpdateEffect(BaseEffect Effect)

@@ -9,8 +9,11 @@
 
   <ItemGroup>
     <Compile Remove="WorldSphereAPI\**" />
+    <Compile Remove="WorldSphereTester\**" />
     <EmbeddedResource Remove="WorldSphereAPI\**" />
+    <EmbeddedResource Remove="WorldSphereTester\**" />
     <None Remove="WorldSphereAPI\**" />
+    <None Remove="WorldSphereTester\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -22,11 +25,11 @@
     <Reference Include="0Harmony">
       <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\worldbox\worldbox_Data\StreamingAssets\mods\NML\Assemblies\0Harmony.dll</HintPath>
     </Reference>
-    <Reference Include="Assembly-CSharp">
-      <HintPath>WorldSphereMod\Assemblies\Assembly-CSharp.dll</HintPath>
-    </Reference>
     <Reference Include="Assembly-CSharp-firstpass">
       <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\worldbox\worldbox_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\worldbox\worldbox_Data\StreamingAssets\mods\NML\Assembly-CSharp-Publicized.dll</HintPath>
     </Reference>
     <Reference Include="CompoundSpheres">
       <HintPath>WorldSphereMod\Assemblies\CompoundSpheres.dll</HintPath>

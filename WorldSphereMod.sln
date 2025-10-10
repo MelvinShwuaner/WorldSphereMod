@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WorldSphereMod", "WorldSphe
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WorldSphereAPI", "WorldSphereAPI.csproj", "{BBF59E3D-49EE-4AA7-9DBF-A7EA922D17C7}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WorldSphereTester", "WorldSphereTester.csproj", "{6EC2C9D8-9D2B-4658-818F-0493E8E17EC8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{BBF59E3D-49EE-4AA7-9DBF-A7EA922D17C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BBF59E3D-49EE-4AA7-9DBF-A7EA922D17C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BBF59E3D-49EE-4AA7-9DBF-A7EA922D17C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6EC2C9D8-9D2B-4658-818F-0493E8E17EC8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6EC2C9D8-9D2B-4658-818F-0493E8E17EC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6EC2C9D8-9D2B-4658-818F-0493E8E17EC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6EC2C9D8-9D2B-4658-818F-0493E8E17EC8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
