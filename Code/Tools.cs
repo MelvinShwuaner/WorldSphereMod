@@ -538,7 +538,7 @@ namespace WorldSphereMod
             //dist but with direction
             public static Vector2 Direction3D(float x1, float x2, float y1, float y2)
             {
-                float x = WrappedDist(x2, x1, Core.Sphere.Width);
+                float x = Core.Sphere.IsWrapped ? WrappedDist(x2, x1, Core.Sphere.Width) : x2 - x1;
                 float y = y1 - y2;
                 return new Vector2(x, y);
             }
