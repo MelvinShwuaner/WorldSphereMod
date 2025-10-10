@@ -22,6 +22,22 @@ namespace WorldSphereMod
             float tY = y / height;
             return Mathf.PerlinNoise(tX * Scale, tY * Scale) + 0.5f;
         }
+        public static T[] ExpandArray<T>(T[] Array, int NewLength)
+        {
+            T[] NewArray = new T[NewLength];
+            for(int i = 0; i < NewLength; i++)
+            {
+                if (i < Array.Length)
+                {
+                    NewArray[i] = Array[i];
+                }
+                else
+                {
+                    NewArray[i] = default;
+                }
+            }
+            return NewArray;
+        }
         public static void ResetTexture(this Texture2D texture)
         {
             Color[] clearPixels = new Color[texture.width * texture.height];
@@ -99,11 +115,11 @@ namespace WorldSphereMod
             Rect SpriteLocation = sprite.textureRect;
             int Y = (int)SpriteLocation.y;
             int X = (int)SpriteLocation.x;
-            for (int i = Y; i < SpriteLocation.y + 8; i++)
+            for (int i = 0; i < 8; i++)
             {
-                for (int j = X; j < SpriteLocation.x + 8; j++)
+                for (int j = 0; j < 8; j++)
                 {
-                    Colors[((i - Y) * 8) + (j - X)] = Texture[(i * sprite.texture.width) + j];
+                    Colors[(i * 8) + j] = Texture[((i+Y) * sprite.texture.width) + j + X];
                 }
             }
             return Colors;

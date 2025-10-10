@@ -455,13 +455,13 @@ namespace WorldSphereMod
                 }
                 Color32[] GetTruePixels(Sprite sprite)
                 {
-                    if (sprite.texture.width != 8 || sprite.texture.height != 8)
+                    if (sprite.texture.width > 8 || sprite.texture.height > 8)
                     {
                         //seperate a sprite from its atlas
                         //this shit took me hours to solve
                         return sprite.PixelsFromSpriteAtlas();
                     }
-                    return sprite.texture.GetPixels32();
+                    return Tools.ExpandArray(sprite.texture.GetPixels32(), 64);
                 }
             }
         }
