@@ -82,7 +82,7 @@ namespace WorldSphereMod.Effects
                 }
                 else
                 {
-                    Effect.transform.position = ((Vector2)Effect.transform.position).To3D(Data.ExtraHeight + (Data.OnGround ? Tools.GetTileHeightSmooth(Effect.transform.position) : 0));
+                    Effect.transform.position = ((Vector2)Effect.transform.position).To3D((Data.ExtraHeight*Core.Sphere.HeightMult) + (Data.OnGround ? Tools.GetTileHeightSmooth(Effect.transform.position) : 0));
                 }
             }
         }
