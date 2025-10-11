@@ -7,8 +7,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WorldSphereMod", "WorldSphe
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WorldSphereAPI", "WorldSphereAPI.csproj", "{BBF59E3D-49EE-4AA7-9DBF-A7EA922D17C7}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WorldSphereTester", "WorldSphereTester.csproj", "{6EC2C9D8-9D2B-4658-818F-0493E8E17EC8}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
