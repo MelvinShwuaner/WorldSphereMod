@@ -1,4 +1,6 @@
-﻿using WorldSphereMod.Effects;
+﻿using NeoModLoader.General;
+using System;
+using WorldSphereMod.Effects;
 
 namespace WorldSphereMod.API
 {
@@ -23,6 +25,10 @@ namespace WorldSphereMod.API
         public static void EditEffect(string ID, bool isUpright, bool SeperateSprite, float ExtraHeight, bool OnGround)
         {
             Constants.EffectDatas.Add(ID, new EffectData(isUpright, SeperateSprite, ExtraHeight, OnGround));
+        }
+        public static object GetSetting(string Name, Type Type)
+        {
+            return Core.savedSettings.GetField(Name, Type);
         }
     }
 }

@@ -20,6 +20,18 @@ namespace WorldSphereMod.QuantumSprites
                 transform.rotation *= Tools.RotateToCamera(ref pos);
             }
         }
+        public static void SetScaleAndResetRot(this QuantumSprite sprite, float pScale)
+        {
+            sprite.setScale(pScale);
+            sprite.ForceRotation(ref Constants.Zero);
+        }
+        public static void RotateToCameraAtPos(this Transform transform, Vector3 pos)
+        {
+            if (Core.savedSettings.RotateStuffToCamera && Core.IsWorld3D)
+            {
+                transform.rotation *= Tools.RotateToCameraAtTile(pos.AsIntClamped());
+            }
+        }
         public static void ForceRotation(this GroupSpriteObject obj, ref Vector3 Rot)
         {
             obj.transform.eulerAngles = Rot;
@@ -125,6 +137,7 @@ namespace WorldSphereMod.QuantumSprites
             quantumSprite.setSprite(pSprite);
             quantumSprite.setColor(ref pColor);
         }
+
         public static void SetPos(this QuantumSprite sprite, ref Vector3 pPosition)
         {
             if (!Core.IsWorld3D)
@@ -363,6 +376,20 @@ namespace WorldSphereMod.QuantumSprites
             Matcher.MatchForward(false, new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(Transform), "set_rotation")));
             Matcher.RemoveInstruction();
             Matcher.Insert(new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(Tools), nameof(Tools.AddRotation))));
+            return Matcher.Instructions();
+        }
+        
+        [HarmonyPatch(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawStatusEffectFor))]
+        [HarmonyTranspiler]
+        public static IEnumerable<CodeInstruction> effects(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        {
+            CodeMatcher Matcher = new CodeMatcher(instructions, generator);
+            Matcher.MatchForward(false, new CodeMatch(OpCodes.Callvirt, AccessTools.Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.setScale), new Type[] { typeof(float) })));
+            Matcher.RemoveInstruction();
+            Matcher.Insert(new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(Manager), nameof(Manager.SetScaleAndResetRot))));
+            Matcher.MatchForward(false, new CodeMatch(OpCodes.Callvirt, AccessTools.Method(typeof(GroupSpriteObject), nameof(GroupSpriteObject.setSharedMat))));
+            Matcher.Insert(new CodeInstruction(OpCodes.Ldloc_S, (byte)4), new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(Component), "get_transform")), new CodeInstruction(OpCodes.Ldloc_3), new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Manager), nameof(Manager.RotateToCameraAtPos))));
+
             return Matcher.Instructions();
         }
         [HarmonyPatch(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawBuildings))]

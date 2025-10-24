@@ -309,6 +309,15 @@ namespace WorldSphereMod.General
                 __instance.GetComponent<SpriteRenderer>().enabled = false;
             }
         }
+        [HarmonyPatch(typeof(StatusLibrary), nameof(StatusLibrary.burningEffect))]
+        [HarmonyTranspiler]
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            CodeMatcher Matcher = new CodeMatcher(instructions);
+            Matcher.MatchForward(false, new CodeMatch(OpCodes.Ldloc_0));
+            Matcher.MatchForward(false, new CodeMatch(OpCodes.Ldloc_0));
+            return Matcher.Instructions();
+        }
     }
     public static class FixCrabzilla {
         static List<SpriteRenderer> OriginalSprites = new List<SpriteRenderer>();

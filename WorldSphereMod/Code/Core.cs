@@ -18,6 +18,7 @@ using WorldSphereMod.TileMapToSphere;
 using WorldSphereMod.UI;
 using WorldSphereMod.QuantumSprites;
 using ai.behaviours;
+using System.Linq;
 namespace WorldSphereMod
 {
     public static class Core
@@ -66,6 +67,22 @@ namespace WorldSphereMod
             Constants.PerpBuildings.Add("stockpile_fireproof", true);
             Constants.PerpBuildings.Add("stockpile", true);
             Constants.PerpProjectiles.Add("arrow", true);
+
+            AssetManager.hotkey_library.action_hotkeys = AssetManager.hotkey_library.action_hotkeys.AddToArray(AssetManager.hotkey_library.add(new HotkeyAsset()
+            {
+                id = "Perspective",
+                default_key_1 = KeyCode.F5,
+                check_window_not_active = true,
+                ignore_mod_keys = true,
+                allow_unit_control = true,
+                check_controls_locked = false,
+                just_pressed_action = delegate (HotkeyAsset _)
+                {
+                    AssetManager.powers.get("first_person").toggle_action("first_person");
+                    PowerButtonSelector.instance.checkToggleIcons();
+                }
+            }));
+
         }
         // load the textures after mods are loaded incase some mods add new world tiles
         public static void PostInit()

@@ -2,6 +2,7 @@
 using System.Reflection;
 delegate bool IsWorld3D();
 delegate void MakePerp(string ID);
+delegate object GetSetting(string Name, Type Type);
 delegate void EditEffect(string ID, bool IsUpright, bool SeperateSprite, float ExtraHeight, bool OnGround);
 /// <summary>
 /// WorldSphereMod API Calller
@@ -13,6 +14,7 @@ public class WorldSphereAPI
     MakePerp building;
     MakePerp proj;
     EditEffect editEffect;
+    GetSetting getSetting;
     internal WorldSphereAPI() { }
     /// <summary>
     /// returns true if the world Is 3D
@@ -25,6 +27,18 @@ public class WorldSphereAPI
         building = (MakePerp)Delegate.CreateDelegate(typeof(MakePerp), WorldSpherePort.GetMethod("MakeBuildingPerp", BindingFlags.Static | BindingFlags.Public));
         proj = (MakePerp)Delegate.CreateDelegate(typeof(MakePerp), WorldSpherePort.GetMethod("MakeProjectilePerp", BindingFlags.Static | BindingFlags.Public));
         editEffect = (EditEffect)Delegate.CreateDelegate(typeof(EditEffect), WorldSpherePort.GetMethod("EditEffect", BindingFlags.Static | BindingFlags.Public));
+        getSetting = (GetSetting)Delegate.CreateDelegate(typeof(GetSetting), WorldSpherePort.GetMethod("GetSetting", BindingFlags.Static | BindingFlags.Public));
+    }
+    /// <summary>
+    /// gets a setting
+    /// </summary>
+    /// <remarks>refer to SavedSettings.cs in the Mod Code to view all the settings</remarks>
+    /// <typeparam name="T">the type of the setting, this can be a boolean, float or an integer</typeparam>
+    /// <param name="Name">the Name of the setting</param>
+    /// <returns></returns>
+    public T GetSetting<T>(string Name)
+    {
+        return (T)getSetting(Name, typeof(T));
     }
     /// <summary>
     /// Makes a actor with asset <paramref name="ID"/> non upright, it will face towards the ground and not rotate to the camera
