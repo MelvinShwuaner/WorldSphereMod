@@ -1,5 +1,7 @@
 ﻿using NeoModLoader.General;
 using System;
+using System.Reflection;
+using UnityEngine;
 using WorldSphereMod.Effects;
 
 namespace WorldSphereMod.API
@@ -28,7 +30,16 @@ namespace WorldSphereMod.API
         }
         public static object GetSetting(string Name, Type Type)
         {
-            return Core.savedSettings.GetField(Name, Type);
+            try
+            {
+                FieldInfo field = typeof(SavedSettings).GetField(Name);
+                return field.GetValue(Core.savedSettings);
+            }
+            catch (Exception ex)
+            {
+                Debug.Log($"Setting of Name {Name} and Type {Type} Not Found!");
+                return null;
+            }
         }
     }
 }
