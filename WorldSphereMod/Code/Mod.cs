@@ -42,7 +42,14 @@ using WorldSphereMod;
     {
         return Path.Combine(pModDeclare.FolderPath, "Locales");
     }
+    public static string ModDirectory
+    {
+        get
+        {
+            return declare.FolderPath;
+        }
+    }
 
     public static GameObject Object;
-    ModDeclare declare;
+    static ModDeclare declare;
 }

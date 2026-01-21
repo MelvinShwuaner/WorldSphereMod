@@ -309,23 +309,15 @@ namespace WorldSphereMod.General
                 __instance.GetComponent<SpriteRenderer>().enabled = false;
             }
         }
-        [HarmonyPatch(typeof(StatusLibrary), nameof(StatusLibrary.burningEffect))]
-        [HarmonyTranspiler]
-        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-        {
-            CodeMatcher Matcher = new CodeMatcher(instructions);
-            Matcher.MatchForward(false, new CodeMatch(OpCodes.Ldloc_0));
-            Matcher.MatchForward(false, new CodeMatch(OpCodes.Ldloc_0));
-            return Matcher.Instructions();
-        }
     }
     public static class FixCrabzilla {
         static List<SpriteRenderer> OriginalSprites = new List<SpriteRenderer>();
         static List<SpriteRenderer> Sprites = new List<SpriteRenderer>();
+        static List<Transform> Lasers = new List<Transform>();
         static Transform Manager;
         [HarmonyPatch(typeof(Crabzilla), nameof(Crabzilla.create))]
         [HarmonyPrefix]
-        public static void PrepareCrabzilla(Actor pActor)
+        public static void PrepareCrabzilla(Actor pActor, Crabzilla __instance)
         {
             if (!Core.IsWorld3D)
             {
@@ -335,6 +327,7 @@ namespace WorldSphereMod.General
             Manager = new GameObject().transform;
             foreach (Transform transform in CrabzillaPrefab.transform.GetAllChildren())
             {
+                transform.localPosition = (Vector2)transform.localPosition;
                 if (transform.TryGetComponent(out SpriteRenderer renderer))
                 {
                     OriginalSprites.Add(renderer);
@@ -345,18 +338,21 @@ namespace WorldSphereMod.General
                     Sprites.Add(newrenderer);
                 }
             }
+            Lasers.Add(__instance.arm1.laser.transform);
+            Lasers.Add(__instance.arm2.laser.transform);
         }
         [HarmonyPatch(typeof(Actor), nameof(Actor.checkComponentListDispose))]
         [HarmonyPostfix]
         public static void DestroyCrabzilla(Actor __instance)
         {
-            if(__instance.asset.avatar_prefab != "p_crabzilla")
+            if (__instance.asset.avatar_prefab != "p_crabzilla")
             {
                 return;
             }
             Manager.gameObject.DestroyImmediateIfNotNull();
             OriginalSprites.Clear();
             Sprites.Clear();
+            Lasers.Clear();
         }
         [HarmonyPatch(typeof(Crabzilla), nameof(Crabzilla.update))]
         [HarmonyPostfix]
@@ -369,13 +365,14 @@ namespace WorldSphereMod.General
             Manager.transform.position = Tools.To3DTileHeight(__instance.transform.position, 10);
             Manager.transform.rotation = Tools.RotateToCameraAtTile(__instance.transform.position.AsIntClamped());
             Manager.localScale = __instance.transform.localScale;
-            for(int i = 0; i < OriginalSprites.Count; i++)
+
+            for (int i = 0; i < OriginalSprites.Count; i++)
             {
                 Sprites[i].sprite = OriginalSprites[i].sprite;
-                Sprites[i].gameObject.SetActive(OriginalSprites[i].gameObject.activeSelf && OriginalSprites[i].enabled);
-                Sprites[i].transform.localPosition = (Vector2)__instance.transform.InverseTransformPoint(OriginalSprites[i].transform.position);
+                Sprites[i].gameObject.SetActive(OriginalSprites[i].gameObject.activeSelf && OriginalSprites[i].enabled && !Core.savedSettings.FirstPerson);
+                Sprites[i].transform.localPosition = __instance.transform.InverseTransformPoint(OriginalSprites[i].transform.position);
                 Sprites[i].transform.localRotation = OriginalSprites[i].transform.rotation;
-                
+
             }
         }
     }

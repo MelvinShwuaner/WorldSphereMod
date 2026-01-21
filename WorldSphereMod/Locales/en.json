@@ -31,5 +31,7 @@
     "perlin_noise": "Perlin Noise",
     "perlin_noise_description": "Will the Height of the world be affected by perlin noise?",
     "upside_down_movement": "Upside Down Movement",
-    "upside_down_movement_description": "if the camera is upside down, controls will be inversed"
+    "upside_down_movement_description": "if the camera is upside down, controls will be inversed",
+    "open_sprites": "Edit Mod Sprites",
+    "open_sprites_description":  "opens the folder containing mod assets, edit them and reboot the game to load"
 }

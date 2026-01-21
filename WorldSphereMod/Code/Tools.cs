@@ -16,6 +16,14 @@ namespace WorldSphereMod
 {
     public static class Tools
     {
+        public static float GetHeight(this Actor Actor)
+        {
+            if(Actor.avatar?.GetComponent<Crabzilla>() != null)
+            {
+                return 20;
+            }
+            return Actor.current_scale.y * 10;
+        }
         public static float PerlinNose(float x, float y, float width, float height, float Scale)
         {
             float tX = x / width;

@@ -132,7 +132,7 @@ namespace WorldSphereMod.NewCamera
             MainCamera.transform.rotation = (Core.savedSettings.CameraRotatesWithWorld ? Core.Sphere.GetRotation(MainCamera.transform.position) * Constants.ToUpright : Quaternion.identity) * Quaternion.Euler(RotateCamera.Rotation);
             if (ControllableUnit._unit_main != null && Core.savedSettings.FirstPerson)
             {
-                Manager._target_zoom = ControllableUnit._unit_main.position_height + (ControllableUnit._unit_main.current_scale.y*10) + CameraTile.TileHeight();
+                Manager._target_zoom = ControllableUnit._unit_main.position_height + ControllableUnit._unit_main.GetHeight() + CameraTile.TileHeight();
             }
             float MinZoom = CameraTile.TileHeight() + 1;
             if (Manager._target_zoom < MinZoom)
@@ -143,6 +143,7 @@ namespace WorldSphereMod.NewCamera
             Core.Sphere.DrawTiles((int)Position.x);
             Bench.benchEnd("Draw Sphere", "game_total");
         }
+        
         public static WorldTile CameraTile
         {
             get
