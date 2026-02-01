@@ -4,7 +4,7 @@
   //WorldSphereTab
   "world_sphere_tab": "立体世界",
   "world_sphere_tab_desc": "让游戏视角变为3D立体!",
-  "world_sphere_tab_author": "制作:Melvin  汉化:半梦半醒",
+  "world_sphere_tab_author": "制作:Melvin    汉化:半梦半醒",
   "is_3d": "3D世界",
   "is_3d_description": "切换此开关，然后重新加载世界\n这样才能在平面和立体间切换",
   "sprite_settings": "贴图设置",
@@ -29,4 +29,12 @@
   "flat_shape": "地平说",
   "flat_shape_description": "让世界变成平面",
   "tile_length_multiplier": "方块长度倍数",
+  "camera_rotates_with_world": "视角跟随",
+  "camera_rotates_with_world_description": "当你控制一个单位前，开启这个沉浸感更强",
+  "perlin_noise": "细致落差",
+  "perlin_noise_description": "使用柏林噪声让世界中的高度进行更细致的区分",
+  "upside_down_movement": "移动颠倒",
+  "upside_down_movement_description": "如果视角相比初始是颠倒的，那操作也会随之颠倒",
+  "open_sprites": "打开贴图文件",
+  "open_sprites_description":  "打开包含模组资源的文件夹，可以对其进行编辑，然后重启游戏以生效"
 }
