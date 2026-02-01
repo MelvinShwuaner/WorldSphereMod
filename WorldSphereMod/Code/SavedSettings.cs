@@ -4,7 +4,7 @@ namespace WorldSphereMod
     [Serializable]
     public class SavedSettings
     {
-        public string Version = "1.5";
+        public string Version = "1.6";
         public bool Is3D = true;
         public bool InvertedCameraMovement = false;
         public bool PerlinNoise = true;
@@ -16,5 +16,8 @@ namespace WorldSphereMod
         public float TileHeight = 1;
         public float BuildingSize = 0.5f;
         public int CurrentShape = 1;
+        public float WaveSpeed;
+        public bool Waves;
+        public float WaveStrength;
     }
 }
