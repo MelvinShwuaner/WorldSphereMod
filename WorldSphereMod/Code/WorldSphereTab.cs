@@ -246,8 +246,8 @@ namespace WorldSphereMod.UI
             }
             PowerButtonSelector.instance.checkToggleIcons();
         }
-        #endregion
       }
+        #endregion
     static class WindowManager
     {
         public static Dictionary<string, PowerWindow> windows = new Dictionary<string, PowerWindow>();

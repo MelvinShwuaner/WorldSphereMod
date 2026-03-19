@@ -58,8 +58,8 @@ namespace WorldSphereMod
         }
         public static T CopyComponent<T>(T original, GameObject destination) where T : Component
         {
-            System.Type type = original.GetType();
-            Component copy = destination.AddComponent(type);
+            Type type = original.GetType();
+            T copy = destination.AddComponent<T>();
 
             FieldInfo[] fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 
@@ -78,7 +78,7 @@ namespace WorldSphereMod
                 }
             }
 
-            return copy as T;
+            return copy;
         }
         public static void AddRotation(this Transform Transform, Quaternion rot)
         {
