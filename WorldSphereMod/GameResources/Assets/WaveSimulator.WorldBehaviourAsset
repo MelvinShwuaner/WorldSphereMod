@@ -1,1 +1,0 @@
-{"Variables":{"enabled":true,"enabled_on_minimap":true,"interval":0.1,"interval_random":0.1,"action":"WorldSphereMod.General.WaveSimulator, THE_3D_WORLDBOX_MOD, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null:UpdateWaves","action_world_clear":null,"stop_when_world_on_pause":true,"manager":null,"id":"WaveSimulator"}}

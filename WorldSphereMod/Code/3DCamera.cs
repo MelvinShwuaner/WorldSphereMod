@@ -82,12 +82,7 @@ namespace WorldSphereMod.NewCamera
     //this manages the camera
     public static class CameraManager
     {
-        public static void ChangePerspective(HotkeyAsset _)
-                {
-                    AssetManager.powers.get("first_person").toggle_action("first_person");
-                     PowerButtonSelector.instance.checkToggleIcons();
-                }
-    public static Vector2 Position => Manager.transform.position;
+        public static Vector2 Position => Manager.transform.position;
         public static Transform transform => MainCamera.transform;
         public static void MakeCamera3D()
         {

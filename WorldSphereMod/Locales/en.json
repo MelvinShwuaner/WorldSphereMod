@@ -33,12 +33,5 @@
     "upside_down_movement": "Upside Down Movement",
     "upside_down_movement_description": "if the camera is upside down, controls will be inversed",
     "open_sprites": "Edit Mod Sprites",
-    "open_sprites_description": "opens the folder containing mod assets, edit them and reboot the game to load",
-    "wave_speed": "Wave Speed",
-    "wave_strength": "Wave Strength",
-    "enable_waves": "Enable Waves",
-    "enable_waves_description":  "Enables Water Waves",
-    "wave_settings": "Wave settings",
-    "wave_settings_description": "Wave Settings",
-    "wave_window":  "Settings for waves"
+    "open_sprites_description":  "opens the folder containing mod assets, edit them and reboot the game to load"
 }

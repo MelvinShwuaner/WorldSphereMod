@@ -121,6 +121,7 @@ namespace WorldSphereMod.UI
             CreateToggleButton("Is3D", "WorldSphereMod/ModIcon", "is_3d", "is_3d_description", Toggle3D, Core.savedSettings.Is3D);
             CreateWindowButton("Sprite Settings", "WorldSphereMod/Rotate", "sprite_settings_window", new List<ButtonData>()
             {
+               ///new ButtonData("sprites_rotate_to_camera", "sprites_rotate_to_camera_description", "WorldSphereMod/Rotate", Core.savedSettings.RotateStuffToCamera, ToggleRotations),
                new ButtonData("sprites_rotate_to_camera", "sprites_rotate_to_camera_description", "WorldSphereMod/Rotate", Core.savedSettings.RotateStuffToCamera, ToggleRotations)
             }
             );
@@ -141,12 +142,6 @@ namespace WorldSphereMod.UI
             });
             GenerateSlider("tile_length_multiplier", 1, 10, Core.savedSettings.TileHeight, (float x) => { Core.savedSettings.TileHeight = x; Core.SaveSettings(); }, "World Settings");
             CreateButton("Open Sprites", "WorldSphereMod/ModIcon", OpenSprites);
-            CreateWindowButton("Wave Settings", "WorldSphereMod/Wave", "wave_window", new List<ButtonData>()
-            {
-                new ButtonData("enable_waves", "enable_waves_description", "WorldSphereMod/Wave", Core.savedSettings.Waves, Waves)
-            });
-            GenerateSlider("wave_strength", 0, 0.9f, Core.savedSettings.WaveStrength, (x) =>{ Core.savedSettings.WaveStrength = x; Core.SaveSettings(); }, "Wave Settings");
-            GenerateSlider("wave_speed", 0, 1, Core.savedSettings.WaveSpeed, (x) => { Core.savedSettings.WaveSpeed = x; Core.SaveSettings(); }, "Wave Settings");
         }
         static void OpenSprites()
         {
@@ -165,11 +160,6 @@ namespace WorldSphereMod.UI
         static void UpsideDown(string ID)
         {
             Core.savedSettings.UpsideDownMovement = !Core.savedSettings.UpsideDownMovement;
-            Core.SaveSettings();
-        }
-        static void Waves(string ID)
-        {
-            Core.savedSettings.Waves = !Core.savedSettings.Waves;
             Core.SaveSettings();
         }
         static void SetShape(string ID)
@@ -297,7 +287,7 @@ namespace WorldSphereMod.UI
             layoutGroup.childScaleHeight = true;
             layoutGroup.childScaleWidth = true;
             layoutGroup.childAlignment = TextAnchor.UpperCenter;
-            layoutGroup.spacing = 80;
+            layoutGroup.spacing = 50;
             LoadInputOptions(Buttons);
         }
         public void openWindow()

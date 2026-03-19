@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
-using WorldSphereMod.General;
 using WorldSphereMod.NewCamera;
 using static WorldSphereMod.TileMapToSphere.TileMapToSphere;
 namespace WorldSphereMod.TileMapToSphere
@@ -110,24 +109,6 @@ namespace WorldSphereMod.TileMapToSphere
         {
             return TilesByZone[pZone.id];
         }
-        public void AddZone(TileZone Zone, Func<WorldTile, bool> Add)
-        {
-            DirtyZones.Add(Zone);
-            foreach (WorldTile tile in Zone.tiles)
-            {
-                if (Add(tile))
-                {
-                    TilesByZone[Zone.id].Add(tile);
-                }
-            }
-        }
-        public void AddChunk(MapChunk Chunk, Func<WorldTile, bool> Add)
-        {
-            foreach(TileZone zone in Chunk.zones)
-            {
-                AddZone(zone, Add);
-            }
-        }
         public void ClearZone(TileZone pZone)
         {
             ClearList.Add(pZone);
@@ -159,14 +140,10 @@ namespace WorldSphereMod.TileMapToSphere
         public static TileQueue ColorQueue;
         public static TileQueue ScaleQueue;
         public static bool UpdateTextures => MapBox.isRenderGameplay();
-        static bool CanForceScaleUpdate(WorldTile pTile)
-        {
-            return Core.savedSettings.Waves && pTile.Type.layer_type == TileLayerType.Ocean;
-        }
         public static void CheckScale(WorldTile pTile)
         {
             int height = pTile.GetHeight();
-            if (pTile.last_rendered_pos_tile.z != height || CanForceScaleUpdate(pTile))
+            if (pTile.last_rendered_pos_tile.z != height)
             {
                 AddTileToScaleQueue(pTile);
                 pTile.last_rendered_pos_tile.z = height;

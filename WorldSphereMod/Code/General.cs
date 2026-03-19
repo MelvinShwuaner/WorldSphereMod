@@ -1,160 +1,16 @@
-﻿using ai.behaviours;
-using EpPathFinding.cs;
+﻿using EpPathFinding.cs;
 using HarmonyLib;
 using NCMS.Utils;
-using NeoModLoader.constants;
-using NeoModLoader.utils;
 using SleekRender;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Security.Cryptography;
-using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.Tilemaps;
-using static UnityEngine.Random;
 namespace WorldSphereMod.General
 {
     //this fuckass mod uses so much fucking transpilers i made my own fucking type for fucking easy use (im not going to fucking use it anyway)
     public delegate IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions);
-    public static class WaveSimulator
-    {
-        [HarmonyPatch(typeof(MapBox), nameof(MapBox.applyForceOnTile))]
-        [HarmonyPostfix]
-        static void Force(WorldTile pTile)
-        {
-            if (pTile.Type.layer_type != TileLayerType.Ocean || !Core.savedSettings.Waves)
-            {
-                return;
-            }
-            CreateWave(pTile, Randy.randomFloat(0.6f, 2), Randy.getRandomPointInUnitCircle());
-        }
-        [HarmonyPatch(typeof(PowerLibrary), nameof(PowerLibrary.spawnEarthquake))]
-        [HarmonyPostfix]
-        static void EarthQuake(WorldTile pTile)
-        {
-            if (pTile.Type.layer_type != TileLayerType.Ocean || !Core.savedSettings.Waves)
-            {
-                return;
-            }
-            CreateWave(pTile, Randy.randomFloat(1.2f, 4), Randy.getRandomPointInUnitCircle());
-        }
-        //my wave simulator was so bad i had to use chatgpt, but chatgpt was so bad i had to do it myself
-        class Wave
-        {
-            public float Strength;
-            public Vector2 Direction;
-            public Vector2 Position;
-            public WorldTile Tile;
-            public Wave(float strength, Vector2 direct, WorldTile tile)
-            {
-                Strength = strength;
-                Direction = direct;
-                Position = tile.pos;
-                Tile = tile;
-            }
-        }
-        static List<Wave> Waves;
-        static HashSet<Wave>[] WavesByChunk;
-        public static void UpdateWaves()
-        {
-            if (!Core.savedSettings.Waves)
-            {
-                return;
-            }
-            CreateRandomWave();
-            int Count = Waves.Count;
-            for(int i = 0; i < Count; i++)
-            {
-                Wave Wave = Waves[i];
-                if (World.world.zone_camera._visible_zones.Contains(Wave.Tile.zone))
-                {
-                    DrawWave(Wave.Tile.chunk);
-                }
-                Wave.Strength -= (1 - Core.savedSettings.WaveStrength)/10;
-                if (Wave.Strength <= 0)
-                {
-                    Waves.RemoveAt(i);
-                    WavesByChunk[Wave.Tile.chunk.id].Remove(Wave);
-                    i--;
-                    Count--;
-                    continue;
-                }
-                Wave.Position += Wave.Direction  * (Core.savedSettings.WaveSpeed*10) * Wave.Strength;
-                WorldTile tile = World.world.GetTile((int)Wave.Position.x, (int)Wave.Position.y);
-                if (tile == null || tile.Type.layer_type != TileLayerType.Ocean)
-                {
-                    Wave.Direction = -Wave.Direction;
-                    Wave.Position = Wave.Tile.pos;
-                    continue;
-                }
-                if (tile != Wave.Tile)
-                {
-                    WavesByChunk[Wave.Tile.chunk.id].Remove(Wave);
-                    Wave.Tile = tile;
-                    WavesByChunk[Wave.Tile.chunk.id].Add(Wave);
-                }
-            }
-        }
-        static void DrawWave(MapChunk chunk)
-        {
-            TileMapToSphere.TileMapToSphere.ScaleQueue.AddChunk(chunk, (x) => x.Type.layer_type == TileLayerType.Ocean);
-            foreach (MapChunk chunc in chunk.neighbours_all)
-            {
-                TileMapToSphere.TileMapToSphere.ScaleQueue.AddChunk(chunc, (x) => x.Type.layer_type == TileLayerType.Ocean);
-            }
-        }
-        public static float GetHeight(WorldTile tile)
-        {
-            if(WavesByChunk ==null || tile.chunk == null)
-            {
-                return 1;
-            }
-            float height = 0;
-            void AddZone(MapChunk chunk)
-            {
-                foreach(Wave wave in WavesByChunk[chunk.id])
-                {
-                    height += ((8 * wave.Strength) - Vector2.Distance(tile.pos, wave.Position)) * wave.Strength;
-                }
-            }
-            AddZone(tile.chunk);
-            foreach(MapChunk chunk in tile.chunk.neighbours_all)
-            {
-                AddZone(chunk);
-            }
-            return Mathf.Max(height, 0);
-        }
-        public static void CreateWaves(int chunkamount)
-        {
-            WavesByChunk = new HashSet<Wave>[chunkamount];
-            for(int i = 0; i < chunkamount; i++)
-            {
-                WavesByChunk[i] = new HashSet<Wave>();
-            }
-            Waves = new List<Wave>();
-        }
-        public static void CreateWave(WorldTile tile, float strength, Vector2 Direction)
-        {
-            Wave Wave = new Wave(strength, Direction, tile);
-            Waves.Add(Wave);
-            WavesByChunk[Wave.Tile.chunk.id].Add(Wave);
-        }
-        static void CreateRandomWave()
-        {
-            int x = Randy.randomInt(0, MapBox.width);
-            int y = Randy.randomInt(0, MapBox.height);
-
-            WorldTile tile = World.world.GetTileSimple(x, y);
-
-            if (tile.Type.layer_type != TileLayerType.Ocean)
-                return;
-
-            CreateWave(tile, Randy.randomFloat(0.3f, 1), Randy.getRandomPointInUnitCircle());
-        }
-    }
     public class SphereControl
     {
         [HarmonyPatch(typeof(MapBox), nameof(MapBox.finishMakingWorld))]
@@ -169,9 +25,8 @@ namespace WorldSphereMod.General
         }
         [HarmonyPatch(typeof(MapBox), nameof(MapBox.addClearWorld))]
         [HarmonyPrefix]
-        static void DestroySphere(ref int pNextWidth, int pNextHeight)
+        static void DestroySphere(ref int pNextWidth)
         {
-            WaveSimulator.CreateWaves(pNextWidth * 4 * pNextHeight * 4);
             pNextWidth = -1;
             Core.Generated = false;
             SmoothLoader.add(delegate { Core.Become2D(); }, "Becoming 2D!");
