@@ -1,4 +1,4 @@
-﻿using NeoModLoader.General;
+﻿
 using System;
 using System.Reflection;
 using UnityEngine;
@@ -28,16 +28,16 @@ namespace WorldSphereMod.API
         {
             Constants.EffectDatas.Add(ID, new EffectData(isUpright, SeperateSprite, ExtraHeight, OnGround));
         }
-        public static object GetSetting(string Name, Type Type)
+        public static object GetSetting(string Name)
         {
             try
             {
-                FieldInfo field = typeof(SavedSettings).GetField(Name);
+                FieldInfo field = typeof(SavedSettings).GetField(Name, BindingFlags.Instance | BindingFlags.Public);
                 return field.GetValue(Core.savedSettings);
             }
             catch (Exception ex)
             {
-                Debug.Log($"Setting of Name {Name} and Type {Type} Not Found!");
+                Debug.Log($"Setting of Name {Name} Not Found!");
                 return null;
             }
         }
