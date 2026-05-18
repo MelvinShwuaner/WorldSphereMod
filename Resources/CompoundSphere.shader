@@ -73,13 +73,15 @@ Shader "CompoundSphere"
                 if(ShouldRenderTextures == 1){
                     finalColor = UNITY_SAMPLE_TEX2DARRAY(TextureArray, i.uv) + addedcolor;
                 }
-                if(ShouldRenderTextures == 2){
+                else if(ShouldRenderTextures == 2){
                     finalColor = (UNITY_SAMPLE_TEX2DARRAY(TextureArray, i.uv) * color) + addedcolor;
                 }
-                if(ShouldRenderTextures == 3){
+                else if(ShouldRenderTextures == 3){
                     finalColor = (UNITY_SAMPLE_TEX2DARRAY(TextureArray, i.uv) + color) + addedcolor;
                 }
-                finalColor = color + addedcolor;
+                else{
+                    finalColor = color + addedcolor;
+                }
                 return  finalColor * _Color;
             }
             ENDHLSL
