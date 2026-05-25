@@ -48,6 +48,51 @@ namespace WorldSphereMod
         {
             return new Vector2(x, z-ZDisplacement);
         }
+        public static Vector2 GetMovementVectorSpherical(float Speed, bool Vertical)
+        {
+            Vector3 vector;
+            float yRotation = RotateCamera.Rotation.y;
+
+            float rad = yRotation * Mathf.Deg2Rad;
+
+            bool Inversed = Core.savedSettings.InvertedCameraMovement;
+            if (Core.savedSettings.CameraRotatesWithWorld)
+            {
+                Inversed = !Inversed;
+            }
+
+            if (Inversed ? !Vertical : Vertical)
+            {
+                vector = new Vector3(Mathf.Sin(rad), 0, Mathf.Cos(rad)).normalized;
+                if (Core.savedSettings.CameraRotatesWithWorld)
+                {
+                    vector.z *= RotateCamera.InvertMult;
+                }
+            }
+            else
+            {
+                vector = new Vector3(Mathf.Cos(rad), 0, -Mathf.Sin(rad)).normalized;
+                vector.x *= RotateCamera.InvertMult;
+                if (Core.savedSettings.CameraRotatesWithWorld)
+                {
+                    vector *= -1;
+                }
+                else
+                {
+                    vector.z *= RotateCamera.InvertMult;
+                }
+            }
+            return new Vector2(vector.x * Speed, vector.z * Speed * RotateCamera.InvertMult);
+        }
+        public static Vector2 GetMovementVectorFlat(float Speed, bool Vertical)
+        {
+            Vector3 vector = GetMovementVectorSpherical(Speed, Vertical);
+            if (!Core.savedSettings.CameraRotatesWithWorld)
+            {
+                vector.x *= RotateCamera.InvertMult;
+            }
+            return vector;
+        }
         public static Vector3 CartesianToCylindrical(SphereManager manager, float X, float Y, float Height = 0)
         {
             Vector2 xy = Tools.MathStuff.PointOnCircle(-X, manager.Radius, Height);

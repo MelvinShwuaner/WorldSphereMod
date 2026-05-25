@@ -243,7 +243,7 @@ namespace WorldSphereMod
             public delegate Quaternion GetRot(Vector2 Pos);
             public struct Shape
             {
-                public Shape(To2D to2d, To2DFast to2dfast, GetSphereTilePosition to3d, GetRot rot, Initiation init, GetCameraRange GetCameraRange, bool IsWrapped)
+                public Shape(To2D to2d, To2DFast to2dfast, GetSphereTilePosition to3d, GetRot rot, Initiation init, GetCameraRange GetCameraRange, bool IsWrapped, GetVector getVector)
                 {
                     this.To2D = to2d;
                     this.To2DFast = to2dfast;
@@ -252,6 +252,7 @@ namespace WorldSphereMod
                     this.Inititation = init;
                     this.GetCameraRange = GetCameraRange;
                     this.IsWrapped = IsWrapped;
+                    this.GetCameraVector = getVector;
                 }
                 public bool IsWrapped;
                 public To2D To2D;
@@ -260,6 +261,7 @@ namespace WorldSphereMod
                 public GetRot tileRotation;
                 public Initiation Inititation;
                 public GetCameraRange GetCameraRange;
+                public GetVector GetCameraVector;
             }
             public static bool IsWrapped => CurrentShape.IsWrapped;
             public static float Radius => Manager.Radius;
@@ -286,10 +288,14 @@ namespace WorldSphereMod
             {
                 CurrentShape.GetCameraRange(Sphere.Manager, out Min, out Max);
             }
+            public static Vector2 GetCameraVector(float Speed, bool Vertical)
+            {
+                return CurrentShape.GetCameraVector(Speed, Vertical);
+            }
             static List<Shape> Shapes = new List<Shape>()
             {
-                new Shape(CylindricalToCartesian, CylindricalToCartesianFast, CartesianToCylindrical, CylindricalRotation, CylindricalInitiation, RenderRange, true), //cylinder
-                new Shape(FlatToCartesian, FlatToCartesianFast, CartesianToFlat, FlatRotation, FlatInitiation, RenderRangeFlat, false)//flat
+                new Shape(CylindricalToCartesian, CylindricalToCartesianFast, CartesianToCylindrical, CylindricalRotation, CylindricalInitiation, RenderRange, true, GetMovementVectorSpherical), //cylinder
+                new Shape(FlatToCartesian, FlatToCartesianFast, CartesianToFlat, FlatRotation, FlatInitiation, RenderRangeFlat, false, GetMovementVectorFlat)//flat
             };
             public static void Begin()
             {
