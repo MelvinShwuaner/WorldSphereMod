@@ -64,7 +64,7 @@ namespace WorldSphereMod
         }
         public static Quaternion CylindricalRotation(Vector2 pos)
         {
-            return Quaternion.AngleAxis(Tools.MathStuff.Angle(pos.x, pos.y), Vector3.forward) * ConstRot;
+            return Quaternion.AngleAxis(Tools.MathStuff.Angle(pos.y, pos.x), Vector3.forward) * ConstRot;
         }
         public static Quaternion FlatRotation(SphereTile _)
         {
