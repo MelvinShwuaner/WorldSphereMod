@@ -27,13 +27,18 @@ namespace WorldSphereMod.General
         [HarmonyPrefix]
         static void DestroySphere(ref int pNextWidth, int pNextHeight)
         {
-            if (Core.savedSettings.Is3D)
-            {
-                Core.Sphere.PrepareShape(pNextWidth, pNextHeight);
-            }
             pNextWidth = -1;
             Core.Generated = false;
             SmoothLoader.add(delegate { Core.Become2D(); }, "Becoming 2D!");
+        }
+        [HarmonyPatch(typeof(MapBox), nameof(MapBox.setMapSize))]
+        [HarmonyPrefix]
+        static void PrepareShape(ref int pWidth, int pHeight)
+        {
+            if (Core.savedSettings.Is3D)
+            {
+                Core.Sphere.PrepareShape(ref pWidth, ref pHeight);
+            }
         }
     }
     [HarmonyPatch(typeof(Actor), nameof(Actor.precalcMovementSpeed))]

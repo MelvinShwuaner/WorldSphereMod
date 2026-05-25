@@ -229,6 +229,7 @@ namespace WorldSphereMod
         public static bool Generated = false;
         public static bool GeneratingSphere => savedSettings.Is3D && !Generated;
         public static bool IsWorld3D => Sphere.Exists;
+        public delegate void PrepareShape(ref int Width, ref int Height);
         // the layer between the Mod and the compound sphere
         public static class Sphere
         {
@@ -238,13 +239,13 @@ namespace WorldSphereMod
             }
             public static Quaternion GetRotation(Vector2 position)
             {
-                return CurrentShape.tileRotation(position);
+                return CurrentShape.cameraRotation(position);
             }
-            public delegate Quaternion GetRot(Vector2 Pos);
-            public delegate bool IsWorldValid(int Width, int Height);
+            public delegate Quaternion GetRot(SphereTile tile);
+            public delegate Quaternion GetCameraRot(Vector2 tile);
             public struct Shape
             {
-                public Shape(To2D to2d, To2DFast to2dfast, GetSphereTilePosition to3d, GetRot rot, Initiation init, GetCameraRange GetCameraRange, GetVector getVector, GetSphereTileScale GetScale, PhaseGate xgate, PhaseGate ygate, IsWorldValid isvalid)
+                public Shape(To2D to2d, To2DFast to2dfast, GetSphereTilePosition to3d, GetRot rot, Initiation init, GetCameraRange GetCameraRange, GetVector getVector, GetSphereTileScale GetScale, PhaseGate xgate, PhaseGate ygate, PrepareShape isvalid, GetCameraRot getCameraRot)
                 {
                     this.To2D = to2d;
                     this.To2DFast = to2dfast;
@@ -255,10 +256,11 @@ namespace WorldSphereMod
                     this.GetCameraRange = GetCameraRange;
                     this.XGate = xgate;
                     YGate = ygate;
+                    cameraRotation = getCameraRot;
                     this.GetCameraVector = getVector;
-                    this.IsValid = isvalid;
+                    this.Prepare = isvalid;
                 }
-                public IsWorldValid IsValid;
+                public PrepareShape Prepare;
                 public PhaseGate XGate;
                 public PhaseGate YGate;
                 public To2D To2D;
@@ -266,6 +268,7 @@ namespace WorldSphereMod
                 public To2DFast To2DFast;
                 public GetSphereTilePosition To3D;
                 public GetRot tileRotation;
+                public GetCameraRot cameraRotation;
                 public Initiation Inititation;
                 public GetCameraRange GetCameraRange;
                 public GetVector GetCameraVector;
@@ -301,9 +304,9 @@ namespace WorldSphereMod
             }
             static List<Shape> Shapes = new List<Shape>()
             {
-                new Shape(CylindricalToCartesian, CylindricalToCartesianFast, CartesianToCylindrical, CylindricalRotation, CylindricalInitiation, RenderRange, GetMovementVectorSpherical, SphereTileScaleCylindrical, WrappedGate, DefaultGate, (_, _) => true), //cylinder
-                new Shape(FlatToCartesian, FlatToCartesianFast, CartesianToFlat, FlatRotation, FlatInitiation, RenderRangeFlat, GetMovementVectorFlat, SphereTileScaleFlat,  DefaultGate, DefaultGate, (_, _) => true),//flat
-                new Shape(CartesianToCube, CartesianToCubeFast, CubeToCartesian, CubeRotation, CubeInitiation, RenderRangeCube, GetMovementVectorCube, SphereTileScaleCube, DefaultGate, DefaultGate, Tools.Cube.Prepare)
+                new Shape(CylindricalToCartesian, CylindricalToCartesianFast, CartesianToCylindrical, CylindricalRotation, CylindricalInitiation, RenderRange, GetMovementVectorSpherical, SphereTileScaleCylindrical, WrappedGate, DefaultGate, (ref int _, ref int _) => { }, CylindricalRotation), //cylinder
+                new Shape(FlatToCartesian, FlatToCartesianFast, CartesianToFlat, FlatRotation, FlatInitiation, RenderRangeFlat, GetMovementVectorFlat, SphereTileScaleFlat,  DefaultGate, DefaultGate, ( ref int _,  ref int _) => {}, FlatRotation),//flat
+                new Shape(CartesianToCube, CartesianToCubeFast, CubeToCartesian, CubeRotation, CubeInitiation, RenderRangeCube, GetMovementVectorCube, SphereTileScaleCube, DefaultGate, DefaultGate, Tools.Cube.Prepare, CubeRotation)
             };
             public static void Begin()
             {
@@ -365,13 +368,10 @@ namespace WorldSphereMod
             {
                 Manager.UpdateColor(Tile.X, Tile.Y);
             }
-            public static void PrepareShape(int width, int height)
+            public static void PrepareShape(ref int Width, ref int Height)
             {
                 CurrentShape = Shapes[savedSettings.CurrentShape];
-                if(!CurrentShape.IsValid(width, height))
-                {
-                    throw new InvalidDataException("The current shape is not valid for this world size");
-                }
+                CurrentShape.Prepare(ref Width, ref Height);
             }
             public static void Finish()
             {
@@ -442,7 +442,7 @@ namespace WorldSphereMod
                 SphereManagerConfig = new SphereManagerSettings(
                     CurrentShape.Inititation,
                     CurrentShape.To3D,
-                    delegate(SphereTile tile) { return CurrentShape.tileRotation(tile.Position); },
+                    delegate(SphereTile tile) { return CurrentShape.tileRotation(tile); },
                     CurrentShape.GetScale,
                     SphereTileColor,
                     SphereTileTexture,

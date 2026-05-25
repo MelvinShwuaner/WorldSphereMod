@@ -58,11 +58,23 @@ namespace WorldSphereMod
             Color32 color = Core.Sphere.GetAddedColor(Tile.Index());
             return new Vector3(color.r, color.g, color.b) / 255;
         }
-        public static Quaternion CylindricalRotation(Vector2 Pos)
+        public static Quaternion CylindricalRotation(SphereTile tile)
         {
-            return Quaternion.AngleAxis(Tools.MathStuff.Angle(Pos.y, Pos.x), Vector3.forward) * ConstRot;
+            return CylindricalRotation(tile.Position);
         }
-        public static Quaternion FlatRotation(Vector2 Pos)
+        public static Quaternion CylindricalRotation(Vector2 pos)
+        {
+            return Quaternion.AngleAxis(Tools.MathStuff.Angle(pos.x, pos.y), Vector3.forward) * ConstRot;
+        }
+        public static Quaternion FlatRotation(SphereTile _)
+        {
+            return ConstRot * ToUpright;
+        }
+        public static Quaternion CubeRotation(Vector2 _)
+        {
+            return ConstRot * ToUpright;
+        }
+        public static Quaternion FlatRotation(Vector2 _)
         {
             return ConstRot * ToUpright;
         }
@@ -216,9 +228,9 @@ namespace WorldSphereMod
         {
             return Tools.Cube.To2D(new Vector3(x, y, z));
         }
-        public static Quaternion CubeRotation(Vector2 Pos)
+        public static Quaternion CubeRotation(SphereTile tile)
         {
-            return Tools.Cube.GetRegion(Pos).Direction;
+            return Tools.Cube.GetRegion(new Vector2(tile.X, tile.Y)).Direction;
         }
         public static void CubeInitiation(SphereManager Manager)
         {
@@ -226,7 +238,6 @@ namespace WorldSphereMod
             Cube.transform.position = new Vector3(0, 0, ZDisplacement);
             Cube.transform.localScale = new Vector3(Tools.Cube.Size, Tools.Cube.Size, Tools.Cube.Size);
             Object.Destroy(Cube.GetComponent<MeshRenderer>());
-            Cube.GetComponent<MeshCollider>().convex = true;
         }
     }
 }

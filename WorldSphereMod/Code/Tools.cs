@@ -721,6 +721,10 @@ namespace WorldSphereMod
             public static Vector3 ToWorld(Vector2 pos, float height)
             {
                 Region region = GetRegion(pos);
+                if(region == null)
+                {
+                    return Vector3.zero; //for now
+                }
                 Vector2 local = pos - region.Rect.position;
 
                 Vector2 uv = new Vector2(
@@ -734,7 +738,7 @@ namespace WorldSphereMod
             }
             public static Region GetRegion(Vector2 Pos)
             {
-                for(int i = 0; i < Regions.Length; i++)
+                   for(int i = 0; i < Regions.Length; i++)
                 {
                    if(Regions[i].Rect.Contains(Pos))
                     {
@@ -743,11 +747,19 @@ namespace WorldSphereMod
                 }
                 return null;
             }
-            public static bool Prepare(int width, int height)
+            public static void Prepare(ref int RealWidth, ref int RealHeight)
             {
-                if (width * 3 != height * 2)
-                    return false;
-
+                if (RealWidth * 3 != RealHeight * 2)
+                {
+                    int k = Mathf.Max(
+                        Mathf.CeilToInt(RealWidth / 2f),
+                        Mathf.CeilToInt(RealHeight / 3f)
+                    );
+                    RealWidth = k * 2;
+                    RealHeight = k * 3;
+                }
+                int width = RealWidth * 64;
+                int height = RealHeight * 64;
                 Size = width / 2f;
                 int midX = width / 2;
                 int h1 = height / 3;
@@ -790,8 +802,6 @@ namespace WorldSphereMod
                 region.Right = Vector3.right;
                 region.Up = Vector3.forward;
                 region.Start = new Vector3(-Size, -Size, -Size);
-
-                return true;
             }
         }
     }
