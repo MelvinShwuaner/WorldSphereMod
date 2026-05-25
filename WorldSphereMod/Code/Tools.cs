@@ -426,9 +426,18 @@ namespace WorldSphereMod
             }
             return (int)Core.Sphere.XGate.GetChange(x1, X2, Core.Sphere.Width);
         }
+        public static int AddLoopedY(int x1, int X2)
+        {
+            if (!Core.IsWorld3D)
+            {
+                return x1 + X2;
+            }
+            return (int)Core.Sphere.YGate.GetChange(x1, X2, Core.Sphere.Height);
+        }
         public static void To3DBounds(ref int pX, ref int pY)
         {
             pX = (int)Core.Sphere.XGate.GetChange(pX, 0, MapBox.width);
+            pY = (int)Core.Sphere.YGate.GetChange(pY, 0, MapBox.height);
         }
         public static int GetHeight(this WorldTile pTile)
         {
@@ -573,7 +582,7 @@ namespace WorldSphereMod
             public static Vector2 Lerp3D(Vector2 a, Vector2 b, float t)
             {
                 t = Mathf.Clamp01(t);
-                Vector2 result = new Vector2(a.x + WrappedDistX(b.x, a.x) * t, a.y + (b.y - a.y) * t);
+                Vector2 result = new Vector2(a.x + WrappedDistX(b.x, a.x) * t, a.y + WrappedDistY(b.y, a.y) * t);
                 return result;
             }
             public static float SquaredDist(float x1, float x2, float y1, float y2)
@@ -599,7 +608,7 @@ namespace WorldSphereMod
             public static float SquaredDist3D(float x1, float x2, float y1, float y2)
             {
                 float x = WrappedDistX(x1, x2);
-                float y = y1 - y2;
+                float y = WrappedDistY(y1, y2);
                 return (x * x) + (y * y);
             }
             //only between 0 and 1

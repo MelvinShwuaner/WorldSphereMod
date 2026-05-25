@@ -335,7 +335,7 @@ namespace WorldSphereMod
 
                 return new Color32((byte)r, (byte)g, (byte)b, (byte)Mathf.Clamp(a, 0, 255));
             }
-            public static Color GetAddedColor(int Index)
+            public static Color32 GetAddedColor(int Index)
             {
                 return FlashLayer.pixels[Index].Normalised();
             }

@@ -50,7 +50,8 @@ namespace WorldSphereMod
         }
         public static Vector3 SphereTileAddedColor(SphereTile Tile)
         {
-            return (Vector4)Core.Sphere.GetAddedColor(Tile.Index());
+            Color32 color = Core.Sphere.GetAddedColor(Tile.Index());
+            return new Vector3(color.r, color.g, color.b) / 255;
         }
         public static Quaternion CylindricalRotation(Vector2 Pos)
         {

@@ -336,7 +336,7 @@ namespace WorldSphereMod.NewCamera
         {
             Vector3 pos = default;
             pos.x = Mathf.Clamp(Core.Sphere.XGate.GetChange(Manager.transform.position.x, 0, Core.Sphere.Width), 0, Core.Sphere.Width);
-            pos.y = Mathf.Clamp(Manager.transform.position.y, 0, MapBox.height-0.5f);
+            pos.y = Mathf.Clamp(Core.Sphere.YGate.GetChange(Manager.transform.position.y, 0, Core.Sphere.Height), 0, MapBox.height-0.5f);
             pos.z = -0.5f;
             Manager.transform.position = pos;
             World.world.nameplate_manager.update();

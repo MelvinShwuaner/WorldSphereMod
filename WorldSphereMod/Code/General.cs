@@ -63,6 +63,7 @@ namespace WorldSphereMod.General
                 return;
             }
             pX = (int)Core.Sphere.XGate.GetChange(pX, 0, World.world.zone_calculator.zones_total_x);
+            pY = (int)Core.Sphere.YGate.GetChange(pY, 0, World.world.zone_calculator.zones_total_y);
         }
         [HarmonyPatch(typeof(MapChunkManager), nameof(MapChunkManager.get), new Type[] {typeof(int), typeof(int)})]
         [HarmonyPrefix]
@@ -73,6 +74,7 @@ namespace WorldSphereMod.General
                 return;
             }
             pX = (int)Core.Sphere.XGate.GetChange(pX, 0, World.world.map_chunk_manager._get_amount_x);
+            pY = (int)Core.Sphere.YGate.GetChange(pY, 0, World.world.map_chunk_manager._amount_y);
         }
     }
     public static class BrushTranspiler
@@ -83,6 +85,9 @@ namespace WorldSphereMod.General
             Matcher.MatchForward(false, new CodeMatch(OpCodes.Add));
             Matcher.RemoveInstruction();
             Matcher.Insert(new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Tools), nameof(Tools.AddLooped))));
+            Matcher.MatchForward(false, new CodeMatch(OpCodes.Add));
+            Matcher.RemoveInstruction();
+            Matcher.Insert(new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Tools), nameof(Tools.AddLoopedY))));
             return Matcher.Instructions();
         }
     }
@@ -264,15 +269,16 @@ namespace WorldSphereMod.General
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             CodeMatcher Matcher = new CodeMatcher(instructions);
-            //first we find the all Subtract functions used to calculate node distance and replace them with a method that accounts for looping, but dont do this if its for the Y Axis
+            //first we find the all Subtract functions used to calculate node distance and replace them with a method that accounts for looping
             int Current = 0;
             while(Matcher.FindNext(new CodeMatch(OpCodes.Sub)))
             {
-                if(Current++ % 2 == 1)
+                Matcher.RemoveInstruction();
+                if (Current++ % 2 == 1)
                 {
+                    Matcher.Insert(new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(FixPathfinding), nameof(SubLoopedY))));
                     continue;
                 }
-                Matcher.RemoveInstruction();
                 Matcher.Insert(new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(FixPathfinding), nameof(SubLooped))));
             }
             return Matcher.Instructions();
@@ -282,6 +288,14 @@ namespace WorldSphereMod.General
             if (Core.IsWorld3D)
             {
                 return (int)Tools.MathStuff.WrappedDistX(x1, x2);
+            }
+            return x1 - x2;
+        }
+        public static int SubLoopedY(int x1, int x2)
+        {
+            if (Core.IsWorld3D)
+            {
+                return (int)Tools.MathStuff.WrappedDistY(x1, x2);
             }
             return x1 - x2;
         }
