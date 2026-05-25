@@ -6,22 +6,50 @@ using static UnityEngine.UI.CanvasScaler;
 using static WorldSphereMod.Constants;
 namespace WorldSphereMod
 {
+    public delegate float Wrap(float a, float b, float c);
+    public struct PhaseGate
+    {
+        public Wrap GetDist;
+        public Wrap GetChange;
+    }
     public static class CompoundSphereScripts
     {
+        public static readonly PhaseGate DefaultGate = new()
+        {
+            GetDist = (a, b, c) => a - b,
+            GetChange = (a, b, c) => a + b
+        };
+        public static readonly PhaseGate WrappedGate = new()
+        {
+            GetDist = (a, b, c) => Tools.MathStuff.WrappedDist(a, b, c),
+            GetChange = (a, b, c) => Tools.MathStuff.WrappedChange(a, b, c)
+        };
         public static int SphereTileTexture(SphereTile Tile)
         {
             return Core.Sphere.WorldTileTexture(Tile.SphereToWorld());
         }
-        public static Vector3 SphereTileScale(SphereTile Tile)
+        public static float SphereTileHeight(SphereTile Tile)
         {
-            float Height = Tools.TrueHeight(Tile.SphereToWorld().GetHeight(), Tile.SphereToWorld().main_type.render_z);
+            WorldTile tile = Tile.SphereToWorld();
+            float Height = Tools.TrueHeight(tile.GetHeight(), tile.main_type.render_z);
             if (Core.Sphere.PerlinNoise)
             {
                 Height *= Tools.PerlinNose(Tile.X, Tile.Y, Tile.Manager.Rows, Tile.Manager.Cols, 20);
             }
-            return new Vector3(1, 1+(Core.Sphere.IsWrapped ? Height*YConst : 0), Height*Core.Sphere.HeightMult);
+            return Height;
         }
-        public static Vector3 SphereTileAddedColor(SphereTile Tile) {
+        public static Vector3 SphereTileScaleFlat(SphereTile Tile)
+        {
+            float Height = SphereTileHeight(Tile);
+            return new Vector3(1, 1, Height * Core.Sphere.HeightMult);
+        }
+        public static Vector3 SphereTileScaleCylindrical(SphereTile Tile)
+        {
+            float Height = SphereTileHeight(Tile);
+            return new Vector3(1, 1 + (Height * YConst), Height * Core.Sphere.HeightMult);
+        }
+        public static Vector3 SphereTileAddedColor(SphereTile Tile)
+        {
             return (Vector4)Core.Sphere.GetAddedColor(Tile.Index());
         }
         public static Quaternion CylindricalRotation(Vector2 Pos)
@@ -30,7 +58,7 @@ namespace WorldSphereMod
         }
         public static Quaternion FlatRotation(Vector2 Pos)
         {
-            return ConstRot* ToUpright;
+            return ConstRot * ToUpright;
         }
         public static Color32 SphereTileColor(SphereTile SphereTile)
         {
@@ -38,15 +66,15 @@ namespace WorldSphereMod
         }
         public static Vector3 CartesianToFlat(SphereManager manager, float X, float Y, float Height = 0)
         {
-            return new Vector3(X, Height, Y+ZDisplacement);
+            return new Vector3(X, Height, Y + ZDisplacement);
         }
         public static Vector3 FlatToCartesian(SphereManager manager, float x, float y, float z)
         {
-            return new Vector3(x, z-ZDisplacement, y);
+            return new Vector3(x, z - ZDisplacement, y);
         }
         public static Vector2 FlatToCartesianFast(SphereManager manager, float x, float y, float z)
         {
-            return new Vector2(x, z-ZDisplacement);
+            return new Vector2(x, z - ZDisplacement);
         }
         public static Vector2 GetMovementVectorSpherical(float Speed, bool Vertical)
         {
@@ -96,13 +124,13 @@ namespace WorldSphereMod
         public static Vector3 CartesianToCylindrical(SphereManager manager, float X, float Y, float Height = 0)
         {
             Vector2 xy = Tools.MathStuff.PointOnCircle(-X, manager.Radius, Height);
-            float z = Y+ZDisplacement;
+            float z = Y + ZDisplacement;
             return new Vector3(xy.x, xy.y, z);
         }
         public static Vector3 CylindricalToCartesian(SphereManager manager, float x, float y, float z)
         {
             float X = manager.Clamp(Tools.MathStuff.Flip(Mathf.Atan2(y, x) / (2f * Mathf.PI) * manager.Rows, manager.Rows), 0);
-            float Y = z-ZDisplacement;
+            float Y = z - ZDisplacement;
             float Height = Mathf.Sqrt((x * x) + (y * y)) - manager.Radius;
             return new Vector3(X, Y, Height);
         }
@@ -110,13 +138,13 @@ namespace WorldSphereMod
         public static Vector2 CylindricalToCartesianFast(SphereManager manager, float x, float y, float z)
         {
             float X = manager.Clamp(Tools.MathStuff.Flip(Mathf.Atan2(y, x) / (2f * Mathf.PI) * manager.Rows, manager.Rows), 0);
-            float Y = z-ZDisplacement;
+            float Y = z - ZDisplacement;
             return new Vector2Int((int)X, (int)Y);
         }
         public static void CylindricalInitiation(SphereManager Manager)
         {
             GameObject Cylinder = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            Cylinder.transform.SetPositionAndRotation(new Vector3(0, 0, (Manager.Cols / 2)+ZDisplacement), Quaternion.Euler(-90, 0, 0));
+            Cylinder.transform.SetPositionAndRotation(new Vector3(0, 0, (Manager.Cols / 2) + ZDisplacement), Quaternion.Euler(-90, 0, 0));
             Cylinder.transform.localScale = new Vector3(Manager.Diameter, Manager.Cols / 2, Manager.Diameter);
             Object.Destroy(Cylinder.GetComponent<CapsuleCollider>());
             Object.Destroy(Cylinder.GetComponent<MeshRenderer>());
@@ -126,7 +154,7 @@ namespace WorldSphereMod
         public static void FlatInitiation(SphereManager Manager)
         {
             GameObject Quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            Quad.transform.SetPositionAndRotation(new Vector3((Manager.Rows / 2) - 0.5f, 0, (Manager.Cols / 2) - 0.5f+ZDisplacement), Quaternion.Euler(90, 0, 0));
+            Quad.transform.SetPositionAndRotation(new Vector3((Manager.Rows / 2) - 0.5f, 0, (Manager.Cols / 2) - 0.5f + ZDisplacement), Quaternion.Euler(90, 0, 0));
             Quad.transform.localScale = new Vector3(Manager.Rows, Manager.Cols, 1);
             Object.Destroy(Quad.GetComponent<MeshRenderer>());
             Quad.GetComponent<MeshCollider>().convex = true; //why the fuck?
@@ -137,18 +165,18 @@ namespace WorldSphereMod
             return World.world.quality_changer.isLowRes() ? DisplayMode.ColorOnly : DisplayMode.TextureOnly;
         }
         static float RangeMult => Core.savedSettings.RenderRange;
-        static float BaseRange => 4 - (1/RangeMult);
-        public static void RenderRange(SphereManager SphereManager, out int Min, out int Max) 
+        static float BaseRange => 4 - (1 / RangeMult);
+        public static void RenderRange(SphereManager SphereManager, out int Min, out int Max)
         {
-           float Devide = BaseRange + (CameraManager.Manager.orthographic_size_max / CameraManager.Height / RangeMult);
-           float Rows = SphereManager.Rows;
-           Min = (int)-(Rows / Devide);
-           Max = (int)(Rows / Devide); 
+            float Devide = BaseRange + (CameraManager.Manager.orthographic_size_max / CameraManager.Height / RangeMult);
+            float Rows = SphereManager.Rows;
+            Min = (int)-(Rows / Devide);
+            Max = (int)(Rows / Devide);
         }
         public static void RenderRangeFlat(SphereManager SphereManager, out int Min, out int Max)
         {
-            float Devide = (BaseRange + (CameraManager.Manager.orthographic_size_max / CameraManager.Height / RangeMult))/4;
-            
+            float Devide = (BaseRange + (CameraManager.Manager.orthographic_size_max / CameraManager.Height / RangeMult)) / 4;
+
             float Rows = SphereManager.Rows;
             Min = Mathf.Max((int)-(Rows / Devide), -(int)CameraManager.Position.x);
             Max = Mathf.Min((int)(Rows / Devide), Core.Sphere.Width - (int)CameraManager.Position.x);

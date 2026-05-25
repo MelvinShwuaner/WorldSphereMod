@@ -247,7 +247,7 @@ namespace WorldSphereMod.NewCamera
         }
         public static void UpdateRotation(Vector2 Change)
         {
-            Rotation.x = Tools.MathStuff.Wrap(Rotation.x, -Change.y, 360);
+            Rotation.x = Tools.MathStuff.WrappedChange(Rotation.x, -Change.y, 360);
             Rotation.y = Rotation.y + (Change.x * InvertMult);
         }
         //i dont know how this fucking works and im too scared to touch it
@@ -335,7 +335,7 @@ namespace WorldSphereMod.NewCamera
         static void ToBounds3D()
         {
             Vector3 pos = default;
-            pos.x = Mathf.Clamp(Tools.MathStuff.Wrap(Manager.transform.position.x, 0, Core.Sphere.Width), 0, Core.Sphere.Width);
+            pos.x = Mathf.Clamp(Core.Sphere.XGate.GetChange(Manager.transform.position.x, 0, Core.Sphere.Width), 0, Core.Sphere.Width);
             pos.y = Mathf.Clamp(Manager.transform.position.y, 0, MapBox.height-0.5f);
             pos.z = -0.5f;
             Manager.transform.position = pos;

@@ -62,7 +62,7 @@ namespace WorldSphereMod.General
             {
                 return;
             }
-            pX = (int)Tools.MathStuff.Wrap(pX, 0, World.world.zone_calculator.zones_total_x);
+            pX = (int)Core.Sphere.XGate.GetChange(pX, 0, World.world.zone_calculator.zones_total_x);
         }
         [HarmonyPatch(typeof(MapChunkManager), nameof(MapChunkManager.get), new Type[] {typeof(int), typeof(int)})]
         [HarmonyPrefix]
@@ -72,7 +72,7 @@ namespace WorldSphereMod.General
             {
                 return;
             }
-            pX = (int)Tools.MathStuff.Wrap(pX, 0, World.world.map_chunk_manager._get_amount_x);
+            pX = (int)Core.Sphere.XGate.GetChange(pX, 0, World.world.map_chunk_manager._get_amount_x);
         }
     }
     public static class BrushTranspiler
@@ -281,7 +281,7 @@ namespace WorldSphereMod.General
         {
             if (Core.IsWorld3D)
             {
-                return (int)Tools.MathStuff.WrappedDist(x1, x2);
+                return (int)Tools.MathStuff.WrappedDistX(x1, x2);
             }
             return x1 - x2;
         }

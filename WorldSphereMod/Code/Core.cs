@@ -243,19 +243,23 @@ namespace WorldSphereMod
             public delegate Quaternion GetRot(Vector2 Pos);
             public struct Shape
             {
-                public Shape(To2D to2d, To2DFast to2dfast, GetSphereTilePosition to3d, GetRot rot, Initiation init, GetCameraRange GetCameraRange, bool IsWrapped, GetVector getVector)
+                public Shape(To2D to2d, To2DFast to2dfast, GetSphereTilePosition to3d, GetRot rot, Initiation init, GetCameraRange GetCameraRange, GetVector getVector, GetSphereTileScale GetScale, PhaseGate xgate, PhaseGate ygate)
                 {
                     this.To2D = to2d;
                     this.To2DFast = to2dfast;
                     this.To3D = to3d;
                     this.tileRotation = rot;
+                    this.GetScale = GetScale;
                     this.Inititation = init;
                     this.GetCameraRange = GetCameraRange;
-                    this.IsWrapped = IsWrapped;
+                    this.XGate = xgate;
+                    YGate = ygate;
                     this.GetCameraVector = getVector;
                 }
-                public bool IsWrapped;
+                public PhaseGate XGate;
+                public PhaseGate YGate;
                 public To2D To2D;
+                public GetSphereTileScale GetScale;
                 public To2DFast To2DFast;
                 public GetSphereTilePosition To3D;
                 public GetRot tileRotation;
@@ -263,7 +267,8 @@ namespace WorldSphereMod
                 public GetCameraRange GetCameraRange;
                 public GetVector GetCameraVector;
             }
-            public static bool IsWrapped => CurrentShape.IsWrapped;
+            public static PhaseGate XGate => CurrentShape.XGate;
+            public static PhaseGate YGate => CurrentShape.YGate;
             public static float Radius => Manager.Radius;
             public static int Width => Manager.Rows;
             public static int Height => Manager.Cols;
@@ -286,7 +291,7 @@ namespace WorldSphereMod
             static Shape CurrentShape;
             public static void GetCamerRange(out int Min, out int Max)
             {
-                CurrentShape.GetCameraRange(Sphere.Manager, out Min, out Max);
+                CurrentShape.GetCameraRange(Manager, out Min, out Max);
             }
             public static Vector2 GetCameraVector(float Speed, bool Vertical)
             {
@@ -294,12 +299,11 @@ namespace WorldSphereMod
             }
             static List<Shape> Shapes = new List<Shape>()
             {
-                new Shape(CylindricalToCartesian, CylindricalToCartesianFast, CartesianToCylindrical, CylindricalRotation, CylindricalInitiation, RenderRange, true, GetMovementVectorSpherical), //cylinder
-                new Shape(FlatToCartesian, FlatToCartesianFast, CartesianToFlat, FlatRotation, FlatInitiation, RenderRangeFlat, false, GetMovementVectorFlat)//flat
+                new Shape(CylindricalToCartesian, CylindricalToCartesianFast, CartesianToCylindrical, CylindricalRotation, CylindricalInitiation, RenderRange, GetMovementVectorSpherical, SphereTileScaleCylindrical, WrappedGate, DefaultGate), //cylinder
+                new Shape(FlatToCartesian, FlatToCartesianFast, CartesianToFlat, FlatRotation, FlatInitiation, RenderRangeFlat, GetMovementVectorFlat, SphereTileScaleFlat,  DefaultGate, DefaultGate)//flat
             };
             public static void Begin()
             {
-                CurrentShape = Shapes[savedSettings.CurrentShape];
                 HeightMult = savedSettings.TileHeight;
                 PerlinNoise = Core.savedSettings.PerlinNoise;
                 CreateSettings();
@@ -360,6 +364,7 @@ namespace WorldSphereMod
             }
             public static void Finish()
             {
+                CurrentShape = Shapes[savedSettings.CurrentShape];
                 if (Manager == null || Manager.gameObject == null)
                 {
                     return;
@@ -428,7 +433,7 @@ namespace WorldSphereMod
                     CurrentShape.Inititation,
                     CurrentShape.To3D,
                     delegate(SphereTile tile) { return CurrentShape.tileRotation(tile.Position); },
-                    SphereTileScale,
+                    CurrentShape.GetScale,
                     SphereTileColor,
                     SphereTileTexture,
                     getdisplaymode,

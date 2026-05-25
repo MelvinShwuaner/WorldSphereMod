@@ -424,11 +424,11 @@ namespace WorldSphereMod
             {
                 return x1 + X2;
             }
-            return (int)Wrap(x1, X2, Core.Sphere.Width);
+            return (int)Core.Sphere.XGate.GetChange(x1, X2, Core.Sphere.Width);
         }
         public static void To3DBounds(ref int pX, ref int pY)
         {
-            pX = (int)Wrap(pX, 0, MapBox.width);
+            pX = (int)Core.Sphere.XGate.GetChange(pX, 0, MapBox.width);
         }
         public static int GetHeight(this WorldTile pTile)
         {
@@ -516,7 +516,7 @@ namespace WorldSphereMod
         }
         public static Vector2 MoveTowards(Vector2 current, Vector2 target, float maxDistanceDelta)
         {
-            if (!Core.IsWorld3D || !Core.Sphere.IsWrapped)
+            if (!Core.IsWorld3D)
             {
                 return Vector2.MoveTowards(current, target, maxDistanceDelta);
             }
@@ -524,7 +524,7 @@ namespace WorldSphereMod
         }
         public static Vector3 MoveTowardsV3(Vector3 current, Vector3 target, float maxDistanceDelta)
         {
-            if (!Core.IsWorld3D || !Core.Sphere.IsWrapped)
+            if (!Core.IsWorld3D)
             {
                 return Vector3.MoveTowards(current, target, maxDistanceDelta);
             }
@@ -562,8 +562,8 @@ namespace WorldSphereMod
             //dist but with direction
             public static Vector2 Direction3D(float x1, float x2, float y1, float y2)
             {
-                float x = Core.Sphere.IsWrapped ? WrappedDist(x2, x1, Core.Sphere.Width) : x2 - x1;
-                float y = y1 - y2;
+                float x = (int)WrappedDistX(x2, x1);
+                float y = (int)WrappedDistY(y1, y2);
                 return new Vector2(x, y);
             }
             public static float Dist(float x1, float x2, float y1, float y2)
@@ -573,7 +573,7 @@ namespace WorldSphereMod
             public static Vector2 Lerp3D(Vector2 a, Vector2 b, float t)
             {
                 t = Mathf.Clamp01(t);
-                Vector2 result = new Vector2(a.x + WrappedDist(b.x, a.x) * t, a.y + (b.y - a.y) * t);
+                Vector2 result = new Vector2(a.x + WrappedDistX(b.x, a.x) * t, a.y + (b.y - a.y) * t);
                 return result;
             }
             public static float SquaredDist(float x1, float x2, float y1, float y2)
@@ -584,13 +584,13 @@ namespace WorldSphereMod
                 }
                 return SquaredDist3D(x1, x2, y1, y2);
             }
-            public static float WrappedDist(float a, float b)
+            public static float WrappedDistX(float a, float b)
             {
-                if (!Core.Sphere.IsWrapped)
-                {
-                    return a - b;
-                }
-                return WrappedDist(a, b, Core.Sphere.Width);
+                return Core.Sphere.XGate.GetDist(a, b, Core.Sphere.Width);
+            }
+            public static float WrappedDistY(float a, float b)
+            {
+                return Core.Sphere.YGate.GetDist(a, b, Core.Sphere.Height);
             }
             public static float Angle(float y, float x)
             {
@@ -598,7 +598,7 @@ namespace WorldSphereMod
             }
             public static float SquaredDist3D(float x1, float x2, float y1, float y2)
             {
-                float x = WrappedDist(x1, x2);
+                float x = WrappedDistX(x1, x2);
                 float y = y1 - y2;
                 return (x * x) + (y * y);
             }
@@ -611,13 +611,9 @@ namespace WorldSphereMod
                 }
                 return 1;
             }
-            public static float Wrap(float Pos, float Change, float Max)
+            public static float WrappedChange(float Pos, float Change, float Max)
             {
                 Pos += Change;
-                if (!Core.Sphere.IsWrapped)
-                {
-                    return Pos;
-                }
                 if (Pos < 0)
                 {
                     return Max + Pos;
