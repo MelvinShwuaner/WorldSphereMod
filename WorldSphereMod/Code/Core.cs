@@ -241,9 +241,10 @@ namespace WorldSphereMod
                 return CurrentShape.tileRotation(position);
             }
             public delegate Quaternion GetRot(Vector2 Pos);
+            public delegate bool IsWorldValid(int Width, int Height);
             public struct Shape
             {
-                public Shape(To2D to2d, To2DFast to2dfast, GetSphereTilePosition to3d, GetRot rot, Initiation init, GetCameraRange GetCameraRange, GetVector getVector, GetSphereTileScale GetScale, PhaseGate xgate, PhaseGate ygate)
+                public Shape(To2D to2d, To2DFast to2dfast, GetSphereTilePosition to3d, GetRot rot, Initiation init, GetCameraRange GetCameraRange, GetVector getVector, GetSphereTileScale GetScale, PhaseGate xgate, PhaseGate ygate, IsWorldValid isvalid)
                 {
                     this.To2D = to2d;
                     this.To2DFast = to2dfast;
@@ -255,7 +256,9 @@ namespace WorldSphereMod
                     this.XGate = xgate;
                     YGate = ygate;
                     this.GetCameraVector = getVector;
+                    this.IsValid = isvalid;
                 }
+                public IsWorldValid IsValid;
                 public PhaseGate XGate;
                 public PhaseGate YGate;
                 public To2D To2D;
@@ -272,7 +275,6 @@ namespace WorldSphereMod
             public static float Radius => Manager.Radius;
             public static int Width => Manager.Rows;
             public static int Height => Manager.Cols;
-            public static Transform CenterCapsule => Manager.transform.GetChild(0);
             public static bool Exists => Manager != null;
             public static float HeightMult = 0;
             public static bool PerlinNoise = true;
@@ -299,8 +301,9 @@ namespace WorldSphereMod
             }
             static List<Shape> Shapes = new List<Shape>()
             {
-                new Shape(CylindricalToCartesian, CylindricalToCartesianFast, CartesianToCylindrical, CylindricalRotation, CylindricalInitiation, RenderRange, GetMovementVectorSpherical, SphereTileScaleCylindrical, WrappedGate, DefaultGate), //cylinder
-                new Shape(FlatToCartesian, FlatToCartesianFast, CartesianToFlat, FlatRotation, FlatInitiation, RenderRangeFlat, GetMovementVectorFlat, SphereTileScaleFlat,  DefaultGate, DefaultGate)//flat
+                new Shape(CylindricalToCartesian, CylindricalToCartesianFast, CartesianToCylindrical, CylindricalRotation, CylindricalInitiation, RenderRange, GetMovementVectorSpherical, SphereTileScaleCylindrical, WrappedGate, DefaultGate, (_, _) => true), //cylinder
+                new Shape(FlatToCartesian, FlatToCartesianFast, CartesianToFlat, FlatRotation, FlatInitiation, RenderRangeFlat, GetMovementVectorFlat, SphereTileScaleFlat,  DefaultGate, DefaultGate, (_, _) => true),//flat
+                new Shape(CartesianToCube, CartesianToCubeFast, CubeToCartesian, CubeRotation, CubeInitiation, RenderRangeCube, GetMovementVectorCube, SphereTileScaleCube, DefaultGate, DefaultGate, Tools.Cube.Prepare)
             };
             public static void Begin()
             {
@@ -362,9 +365,16 @@ namespace WorldSphereMod
             {
                 Manager.UpdateColor(Tile.X, Tile.Y);
             }
-            public static void Finish()
+            public static void PrepareShape(int width, int height)
             {
                 CurrentShape = Shapes[savedSettings.CurrentShape];
+                if(!CurrentShape.IsValid(width, height))
+                {
+                    throw new InvalidDataException("The current shape is not valid for this world size");
+                }
+            }
+            public static void Finish()
+            {
                 if (Manager == null || Manager.gameObject == null)
                 {
                     return;

@@ -6,11 +6,11 @@ using static UnityEngine.UI.CanvasScaler;
 using static WorldSphereMod.Constants;
 namespace WorldSphereMod
 {
-    public delegate float Wrap(float a, float b, float c);
+    public delegate float Gate(float a, float b, float c);
     public struct PhaseGate
     {
-        public Wrap GetDist;
-        public Wrap GetChange;
+        public Gate GetDist;
+        public Gate GetChange;
     }
     public static class CompoundSphereScripts
     {
@@ -39,6 +39,11 @@ namespace WorldSphereMod
             return Height;
         }
         public static Vector3 SphereTileScaleFlat(SphereTile Tile)
+        {
+            float Height = SphereTileHeight(Tile);
+            return new Vector3(1, 1, Height * Core.Sphere.HeightMult);
+        }
+        public static Vector3 SphereTileScaleCube(SphereTile Tile)
         {
             float Height = SphereTileHeight(Tile);
             return new Vector3(1, 1, Height * Core.Sphere.HeightMult);
@@ -122,6 +127,15 @@ namespace WorldSphereMod
             }
             return vector;
         }
+        public static Vector2 GetMovementVectorCube(float Speed, bool Vertical)
+        {
+            Vector3 vector = GetMovementVectorSpherical(Speed, Vertical);
+            if (!Core.savedSettings.CameraRotatesWithWorld)
+            {
+                vector.x *= RotateCamera.InvertMult;
+            }
+            return vector;
+        }
         public static Vector3 CartesianToCylindrical(SphereManager manager, float X, float Y, float Height = 0)
         {
             Vector2 xy = Tools.MathStuff.PointOnCircle(-X, manager.Radius, Height);
@@ -165,7 +179,7 @@ namespace WorldSphereMod
         {
             return World.world.quality_changer.isLowRes() ? DisplayMode.ColorOnly : DisplayMode.TextureOnly;
         }
-        static float RangeMult => Core.savedSettings.RenderRange;
+        static float RangeMult => Core.savedSettings.RowRange;
         static float BaseRange => 4 - (1 / RangeMult);
         public static void RenderRange(SphereManager SphereManager, out int Min, out int Max)
         {
@@ -181,6 +195,38 @@ namespace WorldSphereMod
             float Rows = SphereManager.Rows;
             Min = Mathf.Max((int)-(Rows / Devide), -(int)CameraManager.Position.x);
             Max = Mathf.Min((int)(Rows / Devide), Core.Sphere.Width - (int)CameraManager.Position.x);
+        }
+        public static void RenderRangeCube(SphereManager SphereManager, out int Min, out int Max)
+        {
+            float Devide = (BaseRange + (CameraManager.Manager.orthographic_size_max / CameraManager.Height / RangeMult)) / 4;
+
+            float Rows = SphereManager.Rows;
+            Min = Mathf.Max((int)-(Rows / Devide), -(int)CameraManager.Position.x);
+            Max = Mathf.Min((int)(Rows / Devide), Core.Sphere.Width - (int)CameraManager.Position.x);
+        }
+        public static Vector3 CubeToCartesian(SphereManager manager, float x, float y, float z)
+        {
+            return Tools.Cube.ToWorld(new Vector2(x, y), z);
+        }
+        public static Vector3 CartesianToCube(SphereManager manager, float x, float y, float z)
+        {
+            return Tools.Cube.To2D(new Vector3(x, y, z));
+        }
+        public static Vector2 CartesianToCubeFast(SphereManager manager, float x, float y, float z)
+        {
+            return Tools.Cube.To2D(new Vector3(x, y, z));
+        }
+        public static Quaternion CubeRotation(Vector2 Pos)
+        {
+            return Tools.Cube.GetRegion(Pos).Direction;
+        }
+        public static void CubeInitiation(SphereManager Manager)
+        {
+            GameObject Cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            Cube.transform.position = new Vector3(0, 0, ZDisplacement);
+            Cube.transform.localScale = new Vector3(Tools.Cube.Size, Tools.Cube.Size, Tools.Cube.Size);
+            Object.Destroy(Cube.GetComponent<MeshRenderer>());
+            Cube.GetComponent<MeshCollider>().convex = true;
         }
     }
 }

@@ -12,7 +12,7 @@ namespace WorldSphereMod
         public bool RotateStuffToCamera = true;
         public bool CameraRotatesWithWorld = true;
         public bool FirstPerson = true;
-        public float RenderRange = 2;
+        public float RowRange = 2;
         public float TileHeight = 1;
         public float BuildingSize = 0.5f;
         public int CurrentShape = 1;

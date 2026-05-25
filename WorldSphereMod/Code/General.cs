@@ -25,8 +25,12 @@ namespace WorldSphereMod.General
         }
         [HarmonyPatch(typeof(MapBox), nameof(MapBox.addClearWorld))]
         [HarmonyPrefix]
-        static void DestroySphere(ref int pNextWidth)
+        static void DestroySphere(ref int pNextWidth, int pNextHeight)
         {
+            if (Core.savedSettings.Is3D)
+            {
+                Core.Sphere.PrepareShape(pNextWidth, pNextHeight);
+            }
             pNextWidth = -1;
             Core.Generated = false;
             SmoothLoader.add(delegate { Core.Become2D(); }, "Becoming 2D!");

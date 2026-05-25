@@ -529,7 +529,7 @@ namespace WorldSphereMod
             {
                 return Vector2.MoveTowards(current, target, maxDistanceDelta);
             }
-            return WrappedMoveTowards(current, target, maxDistanceDelta, Core.Sphere.Width);
+            return WrappedMoveTowards(current, target, maxDistanceDelta, Core.Sphere.Width, Core.Sphere.Height);
         }
         public static Vector3 MoveTowardsV3(Vector3 current, Vector3 target, float maxDistanceDelta)
         {
@@ -537,7 +537,7 @@ namespace WorldSphereMod
             {
                 return Vector3.MoveTowards(current, target, maxDistanceDelta);
             }
-            return WrappedMoveTowards(current, target, maxDistanceDelta, Core.Sphere.Width);
+            return WrappedMoveTowards(current, target, maxDistanceDelta, Core.Sphere.Width, Core.Sphere.Height);
         }
         //behold,the class i had to use ai for
         public static class MathStuff
@@ -551,7 +551,7 @@ namespace WorldSphereMod
                 }
                 return X - (X*2);
             }
-            public static Vector3 WrappedMoveTowards(Vector3 current, Vector3 target, float maxDistanceDelta, float worldWidth)
+            public static Vector3 WrappedMoveTowards(Vector3 current, Vector3 target, float maxDistanceDelta, float worldWidth, float worldHeight)
             {
                 float dx = target.x - current.x;
                 if (Mathf.Abs(dx) > worldWidth / 2f)
@@ -561,11 +561,23 @@ namespace WorldSphereMod
                     else
                         target.x += worldWidth;
                 }
+                float dy = target.y - current.y;
+                if (Mathf.Abs(dx) > worldHeight / 2f)
+                {
+                    if (dx > 0)
+                        target.y -= worldHeight;
+                    else
+                        target.y += worldHeight;
+                }
                 Vector3 newPos = Vector3.MoveTowards(current, target, maxDistanceDelta);
                 if (newPos.x < 0)
                     newPos.x += worldWidth;
                 else if (newPos.x >= worldWidth)
                     newPos.x -= worldWidth;
+                if (newPos.y < 0)
+                    newPos.y += worldHeight;
+                else if (newPos.y >= worldHeight)
+                    newPos.y -= worldHeight;
                 return newPos;
             }
             //dist but with direction
@@ -644,6 +656,142 @@ namespace WorldSphereMod
                 else if (delta < -L / 2f)
                     delta += L;
                 return delta;
+            }
+        }
+        public static class Cube
+        {
+            public static float Size { get; private set; }
+            public class Region
+            {
+                private Quaternion _direction;
+                public Quaternion Direction
+                {
+                    get
+                    {
+                        if(_direction == default)
+                        {
+                            _direction = Quaternion.LookRotation(Normal, Up);
+                        }
+                        return _direction;
+                    }
+                }
+                public Rect Rect; //region on rectangle
+                public Vector3 Normal; //the direction the region faces in 3D space
+                public Vector3 Right;
+                public Vector3 Up;
+                public Vector3 Start;//the root of the corner in 3D space
+            }
+            private static readonly Region[] Regions = new Region[6];
+            static Region CreateRegion(int minx, int miny, int maxx, int maxy)
+            {
+                Region region = new Region();
+                region.Rect = new Rect(minx, miny, maxx - minx, maxy - miny);
+                return region;
+            }
+            public static Region GetRegionFrom3D(Vector3 p, out float Height)
+            {
+                Region best = null;
+                Height = -1f;
+
+                foreach (var r in Regions)
+                {
+                    float score = Vector3.Dot(p - r.Start, r.Normal);
+                    if (score > Height)
+                    {
+                        Height = score;
+                        best = r;
+                    }
+                }
+
+                return best;
+            }
+            public static Vector3 To2D(Vector3 p)
+            {
+                Region region = GetRegionFrom3D(p, out float h);
+
+                Vector3 surface = p - region.Normal * h;
+
+                Vector3 local = surface - region.Start;
+
+                float u = Vector3.Dot(local, region.Right) / Size;
+                float v = Vector3.Dot(local, region.Up) / Size;
+
+                return new Vector3(u, v, h);
+            }
+            public static Vector3 ToWorld(Vector2 pos, float height)
+            {
+                Region region = GetRegion(pos);
+                Vector2 local = pos - region.Rect.position;
+
+                Vector2 uv = new Vector2(
+                    local.x / region.Rect.width,
+                    local.y / region.Rect.height
+                );
+
+                return (region.Start +
+                       region.Right * (uv.x * Size) +
+                       region.Up * (uv.y * Size)) + region.Normal * height;
+            }
+            public static Region GetRegion(Vector2 Pos)
+            {
+                for(int i = 0; i < Regions.Length; i++)
+                {
+                   if(Regions[i].Rect.Contains(Pos))
+                    {
+                        return Regions[i];
+                    }
+                }
+                return null;
+            }
+            public static bool Prepare(int width, int height)
+            {
+                if (width * 3 != height * 2)
+                    return false;
+
+                Size = width / 2f;
+                int midX = width / 2;
+                int h1 = height / 3;
+                int h2 = h1 * 2;
+
+                Region region;
+
+                region = Regions[0] = CreateRegion(0, 0, midX, h1);
+                region.Normal = Vector3.forward;
+                region.Right = Vector3.right;
+                region.Up = Vector3.up;
+                region.Start = new Vector3(-Size, -Size, Size);
+
+                region = Regions[1] = CreateRegion(midX, 0, width, h1);
+                region.Normal = Vector3.right;
+                region.Right = Vector3.back;
+                region.Up = Vector3.up;
+                region.Start = new Vector3(Size, -Size, Size);
+
+                region = Regions[2] = CreateRegion(0, h1, midX, h2);
+                region.Normal = Vector3.back;
+                region.Right = Vector3.left;
+                region.Up = Vector3.up;
+                region.Start = new Vector3(Size, -Size, -Size);
+
+                region = Regions[3] = CreateRegion(midX, h1, width, h2);
+                region.Normal = Vector3.left;
+                region.Right = Vector3.forward;
+                region.Up = Vector3.up;
+                region.Start = new Vector3(-Size, -Size, -Size);
+
+                region = Regions[4] = CreateRegion(0, h2, midX, height);
+                region.Normal = Vector3.up;
+                region.Right = Vector3.right;
+                region.Up = Vector3.back;
+                region.Start = new Vector3(-Size, Size, Size);
+
+                region = Regions[5] = CreateRegion(midX, h2, width, height);
+                region.Normal = Vector3.down;
+                region.Right = Vector3.right;
+                region.Up = Vector3.forward;
+                region.Start = new Vector3(-Size, -Size, -Size);
+
+                return true;
             }
         }
     }
