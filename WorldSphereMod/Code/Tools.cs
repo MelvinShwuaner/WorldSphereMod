@@ -1,17 +1,18 @@
 ﻿using CompoundSpheres;
-using System;
-using UnityEngine;
 using HarmonyLib;
-using WorldSphereMod.NewCamera;
-using System.Reflection;
-using static WorldSphereMod.Tools.MathStuff;
-using System.Runtime.CompilerServices;
-using static WorldSphereMod.Constants;
+using System;
 using System.Collections.Concurrent;
-using WorldSphereMod.General;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using UnityEngine;
+using UnityEngine.Tilemaps;
+using WorldSphereMod.General;
+using WorldSphereMod.NewCamera;
 using static UnityEngine.UI.CanvasScaler;
+using static WorldSphereMod.Constants;
+using static WorldSphereMod.Tools.MathStuff;
 namespace WorldSphereMod
 {
     public static class Tools
@@ -517,10 +518,23 @@ namespace WorldSphereMod
         {
             return Core.Sphere.GetTile(Tile.x, Tile.y);
         }
+        public static Tile getVariation(WorldTile pTile)
+        {
+            TileSprites sprites = pTile.main_type.sprites;
+            if (pTile.Type != null && !pTile.Type.wall)
+            {
+                sprites = pTile.Type.sprites;
+                if (pTile.Type.force_edge_variation && pTile.has_tile_up && pTile.tile_up.Type != pTile.Type)
+                {
+                    return pTile.Type.sprites.getVariation(pTile.Type.force_edge_variation_frame);
+                }
+            }
+            return sprites.getRandom();
+        }
         public static TileTypeBase DisplayedType(this WorldTile pTile)
         {
             TileTypeBase Type = pTile.main_type;
-            if (pTile.Type != null)
+            if (pTile.Type != null && !pTile.Type.wall)
             {
                 Type = pTile.Type;
             }

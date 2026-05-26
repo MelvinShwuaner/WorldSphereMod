@@ -35,5 +35,6 @@ namespace WorldSphereMod
         public static float YConst => 1f / (81 / (Core.Sphere.HeightMult));
         public static Vector3 HighlightedZoneSize => new Vector3(1, 1 + (10 * YConst), 1);
         public static Vector3 Zero = Vector3.zero;
+        public static readonly Quaternion Right = Quaternion.Euler(0, 90, 0);
     }
 }

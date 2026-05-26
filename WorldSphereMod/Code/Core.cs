@@ -414,7 +414,7 @@ namespace WorldSphereMod
             }
             public static int WorldTileTexture(WorldTile Tile)
             {
-                Tile Graphic = World.world.tilemap.getVariation(Tile);
+                Tile Graphic = Tools.getVariation(Tile);
                 if(Graphic == null)
                 {
                     return 0;

@@ -202,6 +202,52 @@ namespace WorldSphereMod.QuantumSprites
             }
             return true;
         }
+        [HarmonyPatch(typeof(QuantumSpriteLibrary), nameof(QuantumSpriteLibrary.drawWallType))]
+        [HarmonyPrefix]
+        static bool drawWallTypePatch(TopTileType pTileTypeAsset, QuantumSpriteAsset pAsset, bool pTransparentBuildings, Material pMaterial)
+        {
+            if (Core.IsWorld3D)
+            {
+                drawWallType(pTileTypeAsset, pAsset, pTransparentBuildings, pMaterial);
+                return false;
+            }
+            return true;
+        }
+        static void drawWallType(TopTileType pTileTypeAsset, QuantumSpriteAsset pAsset, bool pTransparentBuildings, Material pMaterial)
+        {
+            List<WorldTile> tTiles = pTileTypeAsset.getCurrentTiles();
+            if (tTiles.Count == 0)
+            {
+                return;
+            }
+            float tGlobalBuildingScaleX = World.world.quality_changer.getTweenBuildingsValue() * 0.25f;
+            float tGlobalBuildingScaleY = tGlobalBuildingScaleX;
+            float zRange = 0.1f;
+            for (int i = 0; i < tTiles.Count; i++)
+            {
+                WorldTile tTile = tTiles[i];
+                if (tTile.zone.visible)
+                {
+                    Sprite tSprite = WallHelper.getSprite(tTile, pTileTypeAsset);
+                    QuantumSprite next = pAsset.group_system.getNext();
+                    next.setSprite(tSprite);
+                    Vector3 tPos = tTile.posV3;
+                    tPos.z = Mathf.Repeat(tPos.x * 0.0001f, zRange);
+                    next.setPosOnly(ref tPos);
+                    next.setScale(tGlobalBuildingScaleX, tGlobalBuildingScaleY);
+                    next.transform.rotation = Tools.GetUprightRotation(tPos.AsIntClamped());
+                    CheckNeighBors(tTile, next);
+                    next.setSharedMat(pMaterial);
+                }
+            }
+        }
+        static void CheckNeighBors(WorldTile tile, QuantumSprite sprite)
+        {
+            if (tile.tile_right.top_type == tile.top_type || tile.tile_left.top_type == tile.top_type)
+            {
+                sprite.transform.rotation *= Constants.Right;
+            }
+        }
         [HarmonyPatch(typeof(QuantumSpriteManager), nameof(QuantumSpriteManager.hideAll))]
         [HarmonyPostfix]
         static void ResetSprites()
