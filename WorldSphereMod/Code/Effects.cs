@@ -169,7 +169,9 @@ namespace WorldSphereMod.Effects
             {
                 return data;
             }
-            return new EffectData(true, ShouldSeperateSprite(Effect));
+            data = new EffectData(true, ShouldSeperateSprite(Effect));
+            EffectDatas.Add(Effect.controller.asset.id, data);
+            return data;
         }
         //we should seperate the sprite if this a custom effect with custom code, otherwise no need.
         public static bool ShouldSeperateSprite(BaseEffect Effect)

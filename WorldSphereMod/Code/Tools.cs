@@ -134,7 +134,10 @@ namespace WorldSphereMod
         }
         public static void Add<TKey, TValue>(this ConcurrentDictionary<TKey, TValue> dict, TKey key, TValue value)
         {
-            dict.TryAdd(key, value);
+            if(!dict.TryAdd(key, value))
+            {
+                dict[key] = value;
+            }
         }
         public static float GetDistSpeedMult(this Actor Actor)
         {

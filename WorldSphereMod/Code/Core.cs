@@ -241,11 +241,10 @@ namespace WorldSphereMod
             {
                 return CurrentShape.cameraRotation(position);
             }
-            public delegate Quaternion GetRot(SphereTile tile);
             public delegate Quaternion GetCameraRot(Vector2 tile);
             public struct Shape
             {
-                public Shape(To2D to2d, To2DFast to2dfast, GetSphereTilePosition to3d, GetRot rot, Initiation init, GetCameraRange GetCameraRange, GetVector getVector, GetSphereTileScale GetScale, PhaseGate xgate, PhaseGate ygate, PrepareShape isvalid, GetCameraRot getCameraRot)
+                public Shape(To2D to2d, To2DFast to2dfast, GetSphereTilePosition to3d, GetSphereTileRotation rot, Initiation init, GetCameraRange GetCameraRange, GetVector getVector, GetSphereTileScale GetScale, PhaseGate xgate, PhaseGate ygate, PrepareShape isvalid, GetCameraRot getCameraRot)
                 {
                     this.To2D = to2d;
                     this.To2DFast = to2dfast;
@@ -267,7 +266,7 @@ namespace WorldSphereMod
                 public GetSphereTileScale GetScale;
                 public To2DFast To2DFast;
                 public GetSphereTilePosition To3D;
-                public GetRot tileRotation;
+                public GetSphereTileRotation tileRotation;
                 public GetCameraRot cameraRotation;
                 public Initiation Inititation;
                 public GetCameraRange GetCameraRange;
@@ -442,7 +441,7 @@ namespace WorldSphereMod
                 SphereManagerConfig = new SphereManagerSettings(
                     CurrentShape.Inititation,
                     CurrentShape.To3D,
-                    delegate(SphereTile tile) { return CurrentShape.tileRotation(tile); },
+                    CurrentShape.tileRotation,
                     CurrentShape.GetScale,
                     SphereTileColor,
                     SphereTileTexture,

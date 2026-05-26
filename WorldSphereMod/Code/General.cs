@@ -25,7 +25,7 @@ namespace WorldSphereMod.General
         }
         [HarmonyPatch(typeof(MapBox), nameof(MapBox.addClearWorld))]
         [HarmonyPrefix]
-        static void DestroySphere(ref int pNextWidth, int pNextHeight)
+        static void DestroySphere(ref int pNextWidth)
         {
             pNextWidth = -1;
             Core.Generated = false;

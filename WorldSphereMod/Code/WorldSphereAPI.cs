@@ -32,8 +32,8 @@ namespace WorldSphereMod.API
         {
             try
             {
-                FieldInfo field = typeof(SavedSettings).GetField(Name, BindingFlags.Instance | BindingFlags.Public);
-                return field.GetValue(Core.savedSettings);
+                FieldInfo field = typeof(SavedSettings).GetField(Name, BindingFlags.Instance | BindingFlags.Public)!;
+                return field.GetValue(Core.savedSettings)!;
             }
             catch (Exception ex)
             {
