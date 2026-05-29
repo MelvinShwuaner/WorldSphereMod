@@ -53,9 +53,9 @@ namespace WorldSphereMod
             float Height = SphereTileHeight(Tile);
             return new Vector3(1, 1 + (Height * YConst), Height * Core.Sphere.HeightMult);
         }
-        public static Vector3 SphereTileAddedColor(SphereTile Tile)
+        public static Vector3 SphereTileAddedColor(int Index)
         {
-            Color32 color = Core.Sphere.GetAddedColor(Tile.Index());
+            Color32 color = Core.Sphere.GetAddedColor(Core.Sphere.GetTile(Index).SphereToWorld().tile_id);
             return new Vector3(color.r, color.g, color.b) / 255;
         }
         public static Quaternion CylindricalRotation(SphereTile tile)
@@ -187,34 +187,53 @@ namespace WorldSphereMod
             Quad.GetComponent<MeshCollider>().convex = true; //why the fuck?
             Quad.transform.parent = Manager.transform;
         }
-        public static DisplayMode getdisplaymode(SphereManager _)
+        public static DisplayMode getdisplaymode()
         {
             return World.world.quality_changer.isLowRes() ? DisplayMode.ColorOnly : DisplayMode.TextureOnly;
         }
-        static float RangeMult => Core.savedSettings.RowRange;
+        static float RangeMult => Core.savedSettings.RenderRange;
         static float BaseRange => 4 - (1 / RangeMult);
-        public static void RenderRange(SphereManager SphereManager, out int Min, out int Max)
+        public static void RenderRange(SphereManager SphereManager, out Range X, out Range Y)
         {
             float Devide = BaseRange + (CameraManager.Manager.orthographic_size_max / CameraManager.Height / RangeMult);
+
             float Rows = SphereManager.Rows;
-            Min = (int)-(Rows / Devide);
-            Max = (int)(Rows / Devide);
+            float Cols = SphereManager.Cols;
+            int Min = (int)-(Rows / Devide);
+            int Max = (int)(Rows / Devide);
+            X = new Range(Min, Max);
+
+            Min = (int)-(Cols / Devide) * 4;
+            Max = (int)(Cols / Devide) * 4;
+            Y = new Range(Min, Max);
         }
-        public static void RenderRangeFlat(SphereManager SphereManager, out int Min, out int Max)
+        public static void RenderRangeFlat(SphereManager SphereManager, out Range X, out Range Y)
         {
             float Devide = (BaseRange + (CameraManager.Manager.orthographic_size_max / CameraManager.Height / RangeMult)) / 4;
 
             float Rows = SphereManager.Rows;
-            Min = Mathf.Max((int)-(Rows / Devide), -(int)CameraManager.Position.x);
-            Max = Mathf.Min((int)(Rows / Devide), Core.Sphere.Width - (int)CameraManager.Position.x);
+            int Min = Mathf.Max((int)-(Rows / Devide), -(int)CameraManager.Position.x);
+            int Max = Mathf.Min((int)(Rows / Devide), Core.Sphere.Width - (int)CameraManager.Position.x);
+            X = new Range(Min, Max);
+
+            float Cols = SphereManager.Cols;
+            Min = (int)-(Cols / Devide);
+            Max = (int)(Cols / Devide);
+            Y = new Range(Min, Max);
         }
-        public static void RenderRangeCube(SphereManager SphereManager, out int Min, out int Max)
+        public static void RenderRangeCube(SphereManager SphereManager, out Range X, out Range Y)
         {
             float Devide = (BaseRange + (CameraManager.Manager.orthographic_size_max / CameraManager.Height / RangeMult)) / 4;
 
             float Rows = SphereManager.Rows;
-            Min = Mathf.Max((int)-(Rows / Devide), -(int)CameraManager.Position.x);
-            Max = Mathf.Min((int)(Rows / Devide), Core.Sphere.Width - (int)CameraManager.Position.x);
+            int Min = Mathf.Max((int)-(Rows / Devide), -(int)CameraManager.Position.x);
+            int Max = Mathf.Min((int)(Rows / Devide), Core.Sphere.Width - (int)CameraManager.Position.x);
+            X = new Range(Min, Max);
+
+            float Cols = SphereManager.Cols;
+            Min = (int)-(Cols / Devide);
+            Max = (int)(Cols / Devide);
+            Y = new Range(Min, Max);
         }
         public static Vector3 CubeToCartesian(SphereManager manager, float x, float y, float z)
         {

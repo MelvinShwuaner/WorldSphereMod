@@ -18,7 +18,7 @@ using WorldSphereMod.TileMapToSphere;
 using WorldSphereMod.UI;
 using WorldSphereMod.QuantumSprites;
 using ai.behaviours;
-using System.Linq;
+using Range = CompoundSpheres.Range;
 namespace WorldSphereMod
 {
     public static class Core
@@ -244,7 +244,7 @@ namespace WorldSphereMod
             public delegate Quaternion GetCameraRot(Vector2 tile);
             public struct Shape
             {
-                public Shape(To2D to2d, To2DFast to2dfast, GetSphereTilePosition to3d, GetSphereTileRotation rot, Initiation init, GetCameraRange GetCameraRange, GetVector getVector, GetSphereTileScale GetScale, PhaseGate xgate, PhaseGate ygate, PrepareShape isvalid, GetCameraRot getCameraRot)
+                public Shape(To2D to2d, To2DFast to2dfast, GetSphereTilePosition to3d, GetSphereTileRotation<SphereTile> rot, Initiation init, GetCameraRange GetCameraRange, GetVector getVector, GetSphereTileScale<SphereTile> GetScale, PhaseGate xgate, PhaseGate ygate, PrepareShape isvalid, GetCameraRot getCameraRot)
                 {
                     this.To2D = to2d;
                     this.To2DFast = to2dfast;
@@ -263,10 +263,10 @@ namespace WorldSphereMod
                 public PhaseGate XGate;
                 public PhaseGate YGate;
                 public To2D To2D;
-                public GetSphereTileScale GetScale;
+                public GetSphereTileScale<SphereTile> GetScale;
                 public To2DFast To2DFast;
                 public GetSphereTilePosition To3D;
-                public GetSphereTileRotation tileRotation;
+                public GetSphereTileRotation<SphereTile> tileRotation;
                 public GetCameraRot cameraRotation;
                 public Initiation Inititation;
                 public GetCameraRange GetCameraRange;
@@ -293,9 +293,9 @@ namespace WorldSphereMod
             public delegate Vector3 To2D(SphereManager manager, float x, float y, float z);
             public delegate Vector2 To2DFast(SphereManager manager, float x, float y, float z);
             static Shape CurrentShape;
-            public static void GetCamerRange(out int Min, out int Max)
+            public static void GetCamerRange(out Range X, out Range Y)
             {
-                CurrentShape.GetCameraRange(Manager, out Min, out Max);
+                CurrentShape.GetCameraRange(Manager, out X, out Y);
             }
             public static Vector2 GetCameraVector(float Speed, bool Vertical)
             {
@@ -359,9 +359,9 @@ namespace WorldSphereMod
                 Manager.RefreshCustom("AddedColors");
                 Manager.RefreshColors();
             }
-            public static void UpdateLayer(SphereTile Tile)
+            public static void UpdateLayer(int Index)
             {
-                Manager.UpdateCustom("AddedColors", Tile.X, Tile.Y);
+                Manager.UpdateCustom("AddedColors", Index);
             }
             public static void UpdateBaseLayer(SphereTile Tile)
             {
@@ -388,9 +388,9 @@ namespace WorldSphereMod
             {
                 return CurrentShape.To2DFast(Manager, X, Y, Z);
             }
-            public static void DrawTiles(int CameraX)
+            public static void DrawTiles(int CameraX, int CameraY)
             {
-                Manager.DrawTiles(CameraX);
+                Manager.DrawTiles(CameraX, CameraY);
             }
             static void CreateCachedColors()
             {
@@ -436,6 +436,10 @@ namespace WorldSphereMod
             {
                 return Manager[X, Y];
             }
+            public static SphereTile GetTile(int I)
+            {
+                return Manager.GetTile(I);
+            }
             static void CreateSettings()
             {
                 SphereManagerConfig = new SphereManagerSettings(
@@ -450,7 +454,7 @@ namespace WorldSphereMod
                     CompoundSphereMesh,
                     CompoundSphereMaterial,
                     CurrentShape.GetCameraRange,
-                    new List<IBufferData>() { new CustomBufferData<Vector3>("AddedColors", 12, SphereTileAddedColor) }
+                    new List<IBufferData>() { new CustomBufferData<Vector3>("AddedColors", SphereTileAddedColor) }
                );
             }
             static void CreateTextures()

@@ -7,6 +7,7 @@ using System.Reflection.Emit;
 using UnityEngine;
 using WorldSphereMod.NewCamera;
 using static WorldSphereMod.TileMapToSphere.TileMapToSphere;
+using Range = CompoundSpheres.Range;
 namespace WorldSphereMod.TileMapToSphere
 {
     [HarmonyPatch(typeof(ZoneCamera), nameof(ZoneCamera.update))]
@@ -26,13 +27,16 @@ namespace WorldSphereMod.TileMapToSphere
         {
             ZoneCamera.clear();
             int CameraX = (int)CameraManager.Position.x / 8;
-            Core.Sphere.GetCamerRange(out int Min, out int Max);
-            Min /= 8;
-            Max /= 8;
+            int CameraY = (int)CameraManager.Position.y / 8;
+            Core.Sphere.GetCamerRange(out Range X, out Range Y);
+            int Min = X.Min / 8;
+            int Max = X.Max / 8;
+            int MinY = Mathf.Clamp(CameraY + (Y.Min / 8), 0, ZoneCamera._zone_manager.zones_total_y - 1);
+            int MaxY = Mathf.Clamp(CameraY + (Y.Max / 8), 0, ZoneCamera._zone_manager.zones_total_y);
             for (int i = Min; i <= Max; i++)
             {
-                int I = (int)Core.Sphere.XGate.GetChange(CameraX, i, ZoneCamera._zone_manager.zones_total_x);
-                for(int j = 0; j < ZoneCamera._zone_manager.zones_total_y; j++)
+                int I = (int)Tools.MathStuff.WrappedChange(CameraX, i, ZoneCamera._zone_manager.zones_total_x);
+                for(int j = MinY; j < MaxY; j++)
                 {
                     TileZone tZone = ZoneCamera._zone_manager.getZone(I, j);
                     if(tZone == null)
@@ -145,7 +149,7 @@ namespace WorldSphereMod.TileMapToSphere
             int height = pTile.GetHeight();
             if (pTile.last_rendered_pos_tile.z != height)
             {
-                AddTileToScaleQueue(pTile);
+                UpdateScale(pTile);
                 pTile.last_rendered_pos_tile.z = height;
             }
         }
@@ -155,7 +159,7 @@ namespace WorldSphereMod.TileMapToSphere
             if (pTile.last_rendered_tile_type != tTypeToDraw)
             {
                 pTile.last_rendered_tile_type = tTypeToDraw;
-                AddTileToTextureQueue(pTile);
+                UpdateTexture(pTile);
             }
         }
         static void Dispose()
@@ -217,7 +221,7 @@ namespace WorldSphereMod.TileMapToSphere
         }
         static void CheckColor(WorldTile tTile)
         {
-            AddTileToColorQueue(tTile);
+            UpdateColor(tTile);
         }
         static void checkZoneToRender(TileZone pZone)
         {
@@ -256,17 +260,17 @@ namespace WorldSphereMod.TileMapToSphere
                 ColorQueue.Clear();
             }
         }
-        public static void AddTileToTextureQueue(WorldTile pTile)
+        public static void UpdateTexture(WorldTile pTile)
         {
             SphereTile Tile = pTile.WorldToSphere();
             Core.Sphere.UpdateTexture(Tile);
         }
-        public static void AddTileToScaleQueue(WorldTile pTile)
+        public static void UpdateScale(WorldTile pTile)
         {
             SphereTile Tile = pTile.WorldToSphere();
             Core.Sphere.UpdateScale(Tile);
         }
-        public static void AddTileToColorQueue(WorldTile pTile)
+        public static void UpdateColor(WorldTile pTile)
         {
             SphereTile Tile = pTile.WorldToSphere();
             Core.Sphere.UpdateBaseLayer(Tile);
@@ -464,7 +468,8 @@ namespace WorldSphereMod.TileMapToSphere
                 AddToColorQueue(World.world.tiles_list[I]);
                 return;
             }
-            Core.Sphere.UpdateLayer(World.world.tiles_list[I].WorldToSphere());
+            WorldTile tile = World.world.tiles_list[I];
+            Core.Sphere.UpdateLayer(tile.Index());
         }
         MapLayer Layer;
         public PixelArray(MapLayer Layer)

@@ -142,7 +142,7 @@ namespace WorldSphereMod.NewCamera
                 Manager._target_zoom = MinZoom;
             }
             Bench.bench("Draw Sphere", "game_total"); //im not even sure if the lag is actually tracked
-            Core.Sphere.DrawTiles((int)Position.x);
+            Core.Sphere.DrawTiles((int)Position.x, (int)Position.y);
             Bench.benchEnd("Draw Sphere", "game_total");
         }
         

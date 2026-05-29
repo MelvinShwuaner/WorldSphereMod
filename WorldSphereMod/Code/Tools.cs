@@ -216,7 +216,7 @@ namespace WorldSphereMod
         }
         public static bool IsBase(this MapLayer layer)
         {
-            return Core.Sphere.BaseLayers.Contains(layer);
+            return layer.GetType() != typeof(PixelFlashEffects);
         }
         public static float TileHeight(this WorldTile Tile)
         {
@@ -555,6 +555,10 @@ namespace WorldSphereMod
                 return Vector3.MoveTowards(current, target, maxDistanceDelta);
             }
             return WrappedMoveTowards(current, target, maxDistanceDelta, Core.Sphere.Width, Core.Sphere.Height);
+        }
+        public static int Index(this WorldTile tile)
+        {
+            return (tile.x * Core.Sphere.Width) + tile.y;
         }
         //behold,the class i had to use ai for
         public static class MathStuff

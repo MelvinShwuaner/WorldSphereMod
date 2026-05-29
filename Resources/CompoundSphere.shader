@@ -28,6 +28,7 @@ Shader "CompoundSphere"
             uniform StructuredBuffer<float3> AddedColors;
             uniform StructuredBuffer<float> Textures;
             uniform float4 _Color;
+            uniform uint Col;
             uint Row;
             uniform float ShouldRenderTextures;
 
@@ -47,7 +48,7 @@ Shader "CompoundSphere"
             Output vert(Input v, const uint instance_id : SV_InstanceID)
             {
                 Output o;
-                uint ID = instance_id + Row;
+                uint ID = instance_id + Row + Col;
                 float3 vertex = v.vertex.xyz * Scales[ID];
                 const float4 pos = mul(Matrixes[ID], float4(vertex, v.vertex.w));
                 o.vertex = mul(UNITY_MATRIX_VP, pos);

@@ -1,6 +1,7 @@
 ﻿using CompoundSpheres;
 using NeoModLoader.api;
 using NeoModLoader.constants;
+using System;
 using System.IO;
 using UnityEngine;
 using WorldSphereMod;
@@ -20,7 +21,7 @@ using WorldSphereMod;
         Object = pGameObject;
         if (!SystemInfo.supportsInstancing || !SystemInfo.supportsComputeShaders || !SystemInfo.supportsIndirectArgumentsBuffer)
         {
-            throw new IncompatibleHardwareException();
+            throw new PlatformNotSupportedException();
         }
     }
     public string GetUrl()
