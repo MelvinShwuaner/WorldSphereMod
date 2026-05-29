@@ -454,7 +454,7 @@ namespace WorldSphereMod
                     CompoundSphereMesh,
                     CompoundSphereMaterial,
                     CurrentShape.GetCameraRange,
-                    new List<IBufferData>() { new CustomBufferData<Vector3>("AddedColors", SphereTileAddedColor) }
+                    new List<IBufferData>() { new CustomBufferData<Color32>("AddedColors", SphereTileAddedColor) }
                );
             }
             static void CreateTextures()

@@ -53,10 +53,10 @@ namespace WorldSphereMod
             float Height = SphereTileHeight(Tile);
             return new Vector3(1, 1 + (Height * YConst), Height * Core.Sphere.HeightMult);
         }
-        public static Vector3 SphereTileAddedColor(int Index)
+        public static Color32 SphereTileAddedColor(int Index)
         {
-            Color32 color = Core.Sphere.GetAddedColor(Core.Sphere.GetTile(Index).SphereToWorld().tile_id);
-            return new Vector3(color.r, color.g, color.b) / 255;
+            SphereTile tile = Core.Sphere.GetTile(Index);
+            return Core.Sphere.GetAddedColor(tile.SphereToWorld().tile_id);
         }
         public static Quaternion CylindricalRotation(SphereTile tile)
         {

@@ -558,7 +558,7 @@ namespace WorldSphereMod
         }
         public static int Index(this WorldTile tile)
         {
-            return (tile.x * Core.Sphere.Width) + tile.y;
+            return (tile.x * Core.Sphere.Height) + tile.y;
         }
         //behold,the class i had to use ai for
         public static class MathStuff
