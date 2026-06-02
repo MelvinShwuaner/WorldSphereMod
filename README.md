@@ -11,6 +11,6 @@ The Backend (for rendering the sphere) https://github.com/MelvinShwuaner/Compoun
 
 # TODO:
 
--add wave buffer to shader to make ocean tiles go up and down
+-add wave buffer to shader to make ocean tiles go up and down. nearly completed
 
--use mesh instancing to render quantum sprites
+-use mesh instancing to render quantum sprites : almost ready
