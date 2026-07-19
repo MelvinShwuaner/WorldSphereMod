@@ -59,7 +59,7 @@ namespace WorldSphereMod
         }
         public static T CopyComponent<T>(T original, GameObject destination) where T : Component
         {
-            Type type = original.GetType();
+            Type type = typeof(T);
             T copy = destination.AddComponent<T>();
 
             FieldInfo[] fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
@@ -73,7 +73,7 @@ namespace WorldSphereMod
 
             foreach (PropertyInfo property in properties)
             {
-                if (property.CanWrite)
+                if (property.CanWrite && property.CanRead)
                 {
                     property.SetValue(copy, property.GetValue(original, null), null);
                 }
@@ -220,7 +220,7 @@ namespace WorldSphereMod
         }
         public static float TileHeight(this WorldTile Tile)
         {
-            return Tile.WorldToSphere().Scale.z * 0.5f;
+            return Tile.WorldToSphere().Scale();
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool EqualsColor(this Color32 mycolor, Color32 color)
@@ -460,7 +460,7 @@ namespace WorldSphereMod
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Quaternion GetRotation(Vector2Int Pos)
         {
-            return Core.Sphere.GetTile(Pos.x, Pos.y).Rotation;
+            return Constants.ConstRot * Constants.ToUpright;
         }
         public static Vector2Int AsIntClamped(this Vector3 Vector)
         {
@@ -506,15 +506,15 @@ namespace WorldSphereMod
 
             return new Color32(r, g, b, color.a);
         }
-        public static int Index(this SphereTile Tile)
+        public static int Index(this StaticTile Tile)
         {
             return Tile.SphereToWorld().data.tile_id;
         }
-        public static WorldTile SphereToWorld(this SphereTile Tile)
+        public static WorldTile SphereToWorld(this StaticTile Tile)
         {
             return World.world.GetTileSimple(Tile.X, Tile.Y);
         }
-        public static SphereTile WorldToSphere(this WorldTile Tile)
+        public static StaticTile WorldToSphere(this WorldTile Tile)
         {
             return Core.Sphere.GetTile(Tile.x, Tile.y);
         }
