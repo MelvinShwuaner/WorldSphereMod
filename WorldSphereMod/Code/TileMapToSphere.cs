@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
 using WorldSphereMod.NewCamera;
-using static WorldSphereMod.TileMapToSphere.TileMapToSphere;
+using static WorldSphereMod.TileMapToSphere.Manager;
 using Range = CompoundSpheres.Range;
 namespace WorldSphereMod.TileMapToSphere
 {
@@ -129,7 +129,7 @@ namespace WorldSphereMod.TileMapToSphere
         }
     }
     [HarmonyPatch(typeof(WorldTilemap), nameof(WorldTilemap.redrawTiles))]
-    public static class TileMapToSphere
+    public static class Manager
     {
         public static void AddToQueue(WorldTile pTile)
         {
@@ -262,18 +262,18 @@ namespace WorldSphereMod.TileMapToSphere
         }
         public static void UpdateTexture(WorldTile pTile)
         {
-            SphereTile Tile = pTile.WorldToSphere();
+            StaticTile Tile = pTile.WorldToSphere();
             Core.Sphere.UpdateTexture(Tile);
         }
         public static void UpdateScale(WorldTile pTile)
         {
-            SphereTile Tile = pTile.WorldToSphere();
+            StaticTile Tile = pTile.WorldToSphere();
+            Core.Sphere.CheckWave(Tile);
             Core.Sphere.UpdateScale(Tile);
         }
         public static void UpdateColor(WorldTile pTile)
         {
-            SphereTile Tile = pTile.WorldToSphere();
-            Core.Sphere.UpdateBaseLayer(Tile);
+            Core.Sphere.UpdateBaseLayer(pTile.Index());
         }
     }
     [HarmonyPatch(typeof(WorldTilemap), nameof(WorldTilemap.enableTiles))]
@@ -452,46 +452,41 @@ namespace WorldSphereMod.TileMapToSphere
         [HarmonyPrefix]
         static bool DontUpdate(MapLayer __instance)
         {
-            return !Core.IsWorld3D;
+            if (Core.IsWorld3D)
+            {
+                Core.Sphere.MapLayerArray.SetPixels32(__instance.pixels, Core.Sphere.CachedColors[__instance].Index);
+                return false;
+            }
+            return true;
         }
     }
-    public class PixelArray
-    {
-        public static void AddLayer(MapLayer Layer, int I)
+        public class PixelArray
         {
-            if (!Core.IsWorld3D)
+            
+        public Action<int> AddLayer;
+            MapLayer Layer;
+            public PixelArray(MapLayer Layer, int Index)
             {
-                return;
-            }
-            if (Layer.IsBase())
-            {
-                AddToColorQueue(World.world.tiles_list[I]);
-                return;
-            }
-            WorldTile tile = World.world.tiles_list[I];
-            Core.Sphere.UpdateLayer(tile.Index());
+                this.Layer = Layer;
+            this.Index = Index;
         }
-        MapLayer Layer;
-        public PixelArray(MapLayer Layer)
-        {
-            this.Layer = Layer;
-        }
-        void Set(int I, Color32 Color)
-        {
-            //somehow more laggy then updating tiles which havent changed
-           // if (!Layer.pixels[I].EqualsColor(Color))
+           public readonly int Index;
+            void Set(int I, Color32 Color)
             {
-                Layer.pixels[I] = Color;
-                AddLayer(Layer, I);
+                //somehow more laggy then updating tiles which havent changed
+                // if (!Layer.pixels[I].EqualsColor(Color))
+                {
+                    Layer.pixels[I] = Color;
+                    AddLayer?.Invoke(I);
+                }
             }
-        }
-        public Color32 this[int x]
-        {
-            get { return Layer.pixels[x]; }
-            set
+            public Color32 this[int x]
             {
-                Set(x, value);
+                get { return Layer.pixels[x]; }
+                set
+                {
+                    Set(x, value);
+                }
             }
         }
-    }
 }

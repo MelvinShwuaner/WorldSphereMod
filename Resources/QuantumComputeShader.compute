@@ -1,0 +1,89 @@
+#pragma kernel Cull
+#pragma kernel CylindricalWarp
+#pragma kernel FlatWarp
+
+StructuredBuffer<int>        VisibleIndices;
+AppendStructuredBuffer<int>  OutputIndices;
+
+uint Count;
+
+[numthreads(64, 1, 1)]
+void Cull(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= Count) return;
+
+    if (VisibleIndices[id.x] >= 0)
+        OutputIndices.Append(id.x);
+}
+StructuredBuffer<float2> InputPositions;
+RWStructuredBuffer<float4x4> OutputMatrices;
+RWStructuredBuffer<int> Dirty;
+float Radius;
+float ZDisplacement;
+// Quaternion multiply
+float4 qMul(float4 a, float4 b)
+{
+    return float4(
+        a.w*b.x + a.x*b.w + a.y*b.z - a.z*b.y,
+        a.w*b.y - a.x*b.z + a.y*b.w + a.z*b.x,
+        a.w*b.z + a.x*b.y - a.y*b.x + a.z*b.w,
+        a.w*b.w - a.x*b.x - a.y*b.y - a.z*b.z
+    );
+}
+
+float4x4 QuatToMatrix(float4 q)
+{
+    float x=q.x, y=q.y, z=q.z, w=q.w;
+    return float4x4(
+        1-2*(y*y+z*z),   2*(x*y-w*z),   2*(x*z+w*y), 0,
+          2*(x*y+w*z), 1-2*(x*x+z*z),   2*(y*z-w*x), 0,
+          2*(x*z-w*y),   2*(y*z+w*x), 1-2*(x*x+y*y), 0,
+          0,             0,             0,             1
+    );
+}
+
+float4x4 TRS(float3 pos, float4 rot)
+{
+    float4x4 m = QuatToMatrix(rot);
+    m._14 = pos.x;
+    m._24 = pos.y;
+    m._34 = pos.z;
+    return m;
+}
+[numthreads(64, 1, 1)]
+void FlatWarp(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= Count) return;
+    if (Dirty[id.x] == 0) return;
+    float2 input = InputPositions[id.x];
+    float3 pos = float3(input.x, 0, input.y + ZDisplacement);
+    float4 rot = float4(0.50000, 0.50000, 0.50000, -0.50000);
+    OutputMatrices[id.x] = TRS(pos, rot);
+    Dirty[id.x] = 0;
+}
+[numthreads(64, 1, 1)]
+void CylindricalWarp(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= Count) return;
+    if (Dirty[id.x] == 0) return;
+    float2 input = InputPositions[id.x];
+
+    // Position
+    float phi = -input.x / Radius;
+    float3 pos = float3(Radius * cos(phi), Radius * sin(phi), input.y + ZDisplacement);
+
+    // CylindricalRotation: AngleAxis(atan2(pos.y, pos.x) * RAD2DEG, forward) * ConstRot
+    // ConstRot = Euler(0, 90, 180) = quaternion(-0.7071, 0, 0, 0.7071) in Unity
+    // AngleAxis(theta, forward/Z) = (0, 0, sin(theta/2), cos(theta/2))
+    float theta = atan2(pos.y, pos.x);          // already in radians, no deg conversion needed
+    float4 angleAxisRot = float4(0, 0, sin(theta * 0.5), cos(theta * 0.5));
+
+    // ConstRot = Quaternion.Euler(0, 90, 180)
+    // Unity Euler order is Z*X*Y, giving: (-0.7071068, 0, 0, 0.7071068)
+    float4 constRot = float4(0.70711, 0.00000, 0.70711, 0.00000);
+
+    float4 rotation = qMul(angleAxisRot, constRot);
+
+    OutputMatrices[id.x] = TRS(pos, rotation);
+    Dirty[id.x] = 0;
+}

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using HarmonyLib;
-using CompoundSpheres;
+using CompoundMeshes;
 using NeoModLoader.utils;
 using NeoModLoader.constants;
 using System.IO;
@@ -18,7 +18,8 @@ using WorldSphereMod.TileMapToSphere;
 using WorldSphereMod.UI;
 using WorldSphereMod.QuantumSprites;
 using ai.behaviours;
-using Range = CompoundSpheres.Range;
+using Range = CompoundMeshes.Range;
+using System.Runtime.CompilerServices;
 namespace WorldSphereMod
 {
     public static class Core
@@ -230,9 +231,14 @@ namespace WorldSphereMod
         public static bool GeneratingSphere => savedSettings.Is3D && !Generated;
         public static bool IsWorld3D => Sphere.Exists;
         public delegate void PrepareShape(ref int Width, ref int Height);
+        /// <summary>
+        /// converts a X,Y position and height to a position on the Sphere
+        /// </summary>
+        public delegate Vector3 To3D(StaticHandler Manager, float x, float y, float height);
         // the layer between the Mod and the compound sphere
         public static class Sphere
         {
+            public static Texture2DArray MapLayerArray;
             public static void AddShape(Shape shape)
             {
                 Shapes.Add(shape);
@@ -242,14 +248,15 @@ namespace WorldSphereMod
                 return CurrentShape.cameraRotation(position);
             }
             public delegate Quaternion GetCameraRot(Vector2 tile);
+            public delegate void Initiation(StaticHandler Manager);
             public struct Shape
             {
-                public Shape(To2D to2d, To2DFast to2dfast, GetSphereTilePosition to3d, GetSphereTileRotation<SphereTile> rot, Initiation init, GetCameraRange GetCameraRange, GetVector getVector, GetSphereTileScale<SphereTile> GetScale, PhaseGate xgate, PhaseGate ygate, PrepareShape isvalid, GetCameraRot getCameraRot)
+                public Shape(To2D to2d, To2DFast to2dfast, To3D to3d, string KernelName, Initiation init, GetCameraRange GetCameraRange, GetVector getVector, GetCustomData<Vector3> GetScale, PhaseGate xgate, PhaseGate ygate, PrepareShape isvalid, GetCameraRot getCameraRot)
                 {
                     this.To2D = to2d;
                     this.To2DFast = to2dfast;
                     this.To3D = to3d;
-                    this.tileRotation = rot;
+                    this.KernelName = KernelName;
                     this.GetScale = GetScale;
                     this.Inititation = init;
                     this.GetCameraRange = GetCameraRange;
@@ -263,10 +270,10 @@ namespace WorldSphereMod
                 public PhaseGate XGate;
                 public PhaseGate YGate;
                 public To2D To2D;
-                public GetSphereTileScale<SphereTile> GetScale;
+                public GetCustomData<Vector3> GetScale;
                 public To2DFast To2DFast;
-                public GetSphereTilePosition To3D;
-                public GetSphereTileRotation<SphereTile> tileRotation;
+                public To3D To3D;
+                public string KernelName;
                 public GetCameraRot cameraRotation;
                 public Initiation Inititation;
                 public GetCameraRange GetCameraRange;
@@ -274,28 +281,30 @@ namespace WorldSphereMod
             }
             public static PhaseGate XGate => CurrentShape.XGate;
             public static PhaseGate YGate => CurrentShape.YGate;
-            public static float Radius => Manager.Radius;
-            public static int Width => Manager.Rows;
-            public static int Height => Manager.Cols;
+            public static float Radius => Width / (2 * Mathf.PI);
+            public static int Width => Handler.Rows;
+            public static int Height => Handler.Cols;
             public static bool Exists => Manager != null;
             public static float HeightMult = 0;
             public static bool PerlinNoise = true;
             #region Fancy stuff
-            static SphereManager Manager;
+            static MeshManager Manager;
+            static StaticHandler Handler;
             static Mesh CompoundSphereMesh;
             static Material CompoundSphereMaterial;
             static Texture2DArray Textures;
-            static SphereManagerSettings SphereManagerConfig;
+            static ManagerSettings StaticHandlerConfig;
             static Dictionary<Tile, int> TileIDS;
+            static ComputeShader WorldSphereShader;
             #endregion
             public static List<MapLayer> BaseLayers;
             public static Dictionary<MapLayer, PixelArray> CachedColors;
-            public delegate Vector3 To2D(SphereManager manager, float x, float y, float z);
-            public delegate Vector2 To2DFast(SphereManager manager, float x, float y, float z);
+            public delegate Vector3 To2D(StaticHandler manager, float x, float y, float z);
+            public delegate Vector2 To2DFast(StaticHandler manager, float x, float y, float z);
             static Shape CurrentShape;
             public static void GetCamerRange(out Range X, out Range Y)
             {
-                CurrentShape.GetCameraRange(Manager, out X, out Y);
+                CurrentShape.GetCameraRange(Handler, out X, out Y);
             }
             public static Vector2 GetCameraVector(float Speed, bool Vertical)
             {
@@ -303,69 +312,105 @@ namespace WorldSphereMod
             }
             static List<Shape> Shapes = new List<Shape>()
             {
-                new Shape(CylindricalToCartesian, CylindricalToCartesianFast, CartesianToCylindrical, CylindricalRotation, CylindricalInitiation, RenderRange, GetMovementVectorSpherical, SphereTileScaleCylindrical, WrappedGate, DefaultGate, (ref int _, ref int _) => { }, CylindricalRotation), //cylinder
-                new Shape(FlatToCartesian, FlatToCartesianFast, CartesianToFlat, FlatRotation, FlatInitiation, RenderRangeFlat, GetMovementVectorFlat, SphereTileScaleFlat,  DefaultGate, DefaultGate, ( ref int _,  ref int _) => {}, FlatRotation),//flat
-                new Shape(CartesianToCube, CartesianToCubeFast, CubeToCartesian, CubeRotation, CubeInitiation, RenderRangeCube, GetMovementVectorCube, SphereTileScaleCube, DefaultGate, DefaultGate, Tools.Cube.Prepare, CubeRotation)
+                new Shape(CylindricalToCartesian, CylindricalToCartesianFast, CartesianToCylindrical, "CylindricalWarp", CylindricalInitiation, RenderRange, GetMovementVectorSpherical, StaticTileScaleCylindrical, WrappedGate, DefaultGate, (ref int _, ref int _) => { }, CylindricalRotation), //cylinder
+                new Shape(FlatToCartesian, FlatToCartesianFast, CartesianToFlat, "FlatWarp", FlatInitiation, RenderRangeFlat, GetMovementVectorFlat, StaticTileScaleFlat,  DefaultGate, DefaultGate, ( ref int _,  ref int _) => {}, FlatRotation),//flat
+               // new Shape(CartesianToCube, CartesianToCubeFast, CubeToCartesian, CubeRotation, CubeInitiation, RenderRangeCube, GetMovementVectorCube, StaticTileScaleCube, DefaultGate, DefaultGate, Tools.Cube.Prepare, CubeRotation)
             };
+            public static void SetLayers3D()
+            {
+                foreach (MapLayer Layer in BaseLayers)
+                {
+                    CachedColors[Layer].AddLayer = (int I) =>
+                    {
+                        WorldTile tile = World.world.tiles_list[I];
+                        TileMapToSphere.Manager.UpdateColor(tile);
+                    };
+                }
+                CachedColors[FlashLayer].AddLayer = (int I) =>
+                {
+                    WorldTile tile = World.world.tiles_list[I];
+                    UpdateLayer(tile.Index());
+                };
+            }
+            public static void SetLayers2D()
+            {
+                foreach(var Layer in CachedColors)
+                {
+                    Layer.Value.AddLayer = null;
+                }
+            }
             public static void Begin()
             {
+                SetLayers3D();
                 HeightMult = savedSettings.TileHeight;
                 PerlinNoise = Core.savedSettings.PerlinNoise;
-                CreateSettings();
+      
                 int width = MapBox.width;
                 int height = MapBox.height;
-                Manager = SphereManager.Creator.CreateSphereManager(width, height, SphereManagerConfig);
-            }
-            public static Color32 GetColor(int index)
-            {
-                Color32 dst = World.world.world_layer.pixels[index];
+                CreateSettings(width, height);
+                Scales = new float[width * height];
 
-                int r = dst.r * dst.a;
-                int g = dst.g * dst.a;
-                int b = dst.b * dst.a;
-                int a = dst.a;
-
-                foreach (MapLayer layer in BaseLayers)
+                MapLayerArray = new Texture2DArray(width, height, CachedColors.Count, TextureFormat.RGBA32, false, false)
                 {
-                    Color32 src = layer.pixels[index];
-                    if (src.a == 0) continue;
-
-                    int invSrcA = 255 - src.a;
-
-                    r = (src.r * src.a + r * invSrcA) / 255;
-                    g = (src.g * src.a + g * invSrcA) / 255;
-                    b = (src.b * src.a + b * invSrcA) / 255;
-                    a = (src.a + a * invSrcA / 255);
+                    filterMode = FilterMode.Point,
+                    wrapMode = TextureWrapMode.Clamp
+                };
+                for (int i = 0; i < CachedColors.Count; i++)
+                {
+                    MapLayerArray.SetPixels32(World.world._map_layers[i].pixels, i);
                 }
 
-                return new Color32((byte)r, (byte)g, (byte)b, (byte)Mathf.Clamp(a, 0, 255));
+                Manager = MeshManager.CreateMeshManager(StaticHandlerConfig, "StaticHandler");
+                CurrentShape.Inititation(Handler);
+
+                Manager.SetComputeProperty("BlendLayers", "Layers", MapLayerArray);
+                Manager.SetComputeProperty("FlashEffects", "Layers", MapLayerArray);
+                MapLayerArray.Apply();
+
+                Manager.SetComputeProperty("LayerCount", 12);
+                Manager.SetComputeProperty("TextureWidth", height);
+                Manager.SetComputeProperty("ZDisplacement", Constants.ZDisplacement);
+                Manager.SetComputeProperty("Radius", width / (2 * Mathf.PI));
+
+                Manager.SetProperty("WaveFrequency", 0.5f); // controls how tightly packed the waves are
+                Manager.SetProperty("WaveSpeed", 1f);     // controls how fast they move
+                Manager.SetProperty("WaveAmplitude", 1f);
+                Manager.SetProperty("WavesEnabled", 0);
+
+                Manager.SetProperty("TextureArray", Textures);
+
+                for (int i = 0; i < width*height; i++)
+                {
+                    Manager.UpdateAll(i);
+                }
+                Manager.RefreshAll();
             }
             public static Color32 GetAddedColor(int Index)
             {
                 return FlashLayer.pixels[Index].Normalised();
             }
-            public static void UpdateScale(SphereTile Tile)
+            public static void UpdateScale(StaticTile Tile)
             {
-                Manager.UpdateScale(Tile.X, Tile.Y);
+                Manager.Update("Scales", Tile.Index);
             }
-            public static void UpdateTexture(SphereTile Tile)
+            public static void UpdateTexture(StaticTile Tile)
             {
-                Manager.UpdateTexture(Tile.X, Tile.Y);
+                Manager.Update("Textures", Tile.Index);
             }
+            public static bool MapLayersDirty = false;
             public static void RefreshSphere()
             {
-                Manager.RefreshScales();
-                Manager.RefreshTextures();
-                Manager.RefreshCustom("AddedColors");
-                Manager.RefreshColors();
+                Manager.SetProperty("Time", Time.time);
+                MapLayerArray.Apply();
+                Manager.RefreshAll();
             }
             public static void UpdateLayer(int Index)
             {
-                Manager.UpdateCustom("AddedColors", Index);
+                Manager.Update("AddedColors", Index);
             }
-            public static void UpdateBaseLayer(SphereTile Tile)
+            public static void UpdateBaseLayer(int Index)
             {
-                Manager.UpdateColor(Tile.X, Tile.Y);
+                Manager.Update("Colors", Index);
             }
             public static void PrepareShape(ref int Width, ref int Height)
             {
@@ -378,31 +423,39 @@ namespace WorldSphereMod
                 {
                     return;
                 }
+                SetLayers2D();
                 Manager.Destroy();
+            }
+            public static void CheckWave(StaticTile Tile)
+            {
+                Manager.Update("Waves", Tile.Index);
             }
             public static Vector3 TilePosWithHeight(float X, float Y, float Z)
             {
-                return CurrentShape.To2D(Manager, X, Y, Z);
+                return CurrentShape.To2D(Handler, X, Y, Z);
             }
             public static Vector2 TilePos(float X, float Y, float Z)
             {
-                return CurrentShape.To2DFast(Manager, X, Y, Z);
+                return CurrentShape.To2DFast(Handler, X, Y, Z);
             }
             public static void DrawTiles(int CameraX, int CameraY)
             {
-                Manager.DrawTiles(CameraX, CameraY);
+                Handler.RefreshRanges(CameraX, CameraY);
+                Manager.SetProperty("ShouldRenderTextures", getdisplaymode());
+                Manager.DrawMeshes();
             }
             static void CreateCachedColors()
             {
+                int Index = 0;
                 CachedColors = new Dictionary<MapLayer, PixelArray>();
                 foreach (var layer in World.world._map_layers)
                 {
-                    CachedColors.Add(layer, new PixelArray(layer));
+                    CachedColors.Add(layer, new PixelArray(layer, Index++));
                 }
             }
             public static Vector3 SpherePos(float X, float Y, float Height = 0)
             {
-                return Manager.SphereTilePosition(X, Y, Height);
+                return CurrentShape.To3D(Handler, X, Y, Height);
             }
             public static void Prepare()
             {
@@ -429,32 +482,35 @@ namespace WorldSphereMod
                 WrappedAssetBundle ab = AssetBundleUtils.GetAssetBundle("worldsphere");
                 CompoundSphereMesh = ab.GetObject<Mesh>("assets/worldspheremod/compoundspheremesh.asset");
                 CompoundSphereMaterial = ab.GetObject<Material>("assets/worldspheremod/compoundspherematerial.mat");
+                WorldSphereShader = ab.GetObject<ComputeShader>("assets/worldspheremod/compoundcomputeshader.compute");
                 CameraManager.Begin(ab.GetObject<Material>("assets/worldspheremod/SkyBox.mat").shader);
                 LibraryMaterials.instance._night_affected_colors.Add(CompoundSphereMaterial);
             }
-            public static SphereTile GetTile(int X, int Y)
+            public static StaticTile GetTile(int X, int Y)
             {
-                return Manager[X, Y];
+                return Handler[X, Y];
             }
-            public static SphereTile GetTile(int I)
+            public static StaticTile GetTile(int I)
             {
-                return Manager.GetTile(I);
+                return Handler.GetTile(I);
             }
-            static void CreateSettings()
+            static void CreateSettings(int Width, int Height)
             {
-                SphereManagerConfig = new SphereManagerSettings(
-                    CurrentShape.Inititation,
-                    CurrentShape.To3D,
-                    CurrentShape.tileRotation,
-                    CurrentShape.GetScale,
-                    SphereTileColor,
-                    SphereTileTexture,
-                    getdisplaymode,
-                    Textures,
+                Handler = new StaticHandler(Width, Height, CurrentShape.GetCameraRange);
+                StaticHandlerConfig = new ManagerSettings(
                     CompoundSphereMesh,
                     CompoundSphereMaterial,
-                    CurrentShape.GetCameraRange,
-                    new List<IBufferData>() { new CustomBufferData<Color32>("AddedColors", SphereTileAddedColor) }
+                    WorldSphereShader,
+                    new List<IBufferData>() { 
+                        new ComputeGraphicsBufferData<Color32>("AddedColors", "OutputColors", "FlashEffects"),
+                        new ComputeBufferData<Vector2>("InputPositions", CurrentShape.KernelName, GetPosition),
+                        new ComputeGraphicsBufferData<Matrix4x4>("Matrixes", "OutputMatrices", CurrentShape.KernelName),
+                        new ComputeGraphicsBufferData<Color32>("Colors", "OutputColors", "BlendLayers"),
+                        new GraphicsBufferData<Vector3>("Scales", CurrentShape.GetScale),
+                        new GraphicsBufferData<float>("Textures", StaticTileTexture),
+                        new GraphicsBufferData<float>("Waves", IsWave) 
+                    },
+                    Handler
                );
             }
             static void CreateTextures()
